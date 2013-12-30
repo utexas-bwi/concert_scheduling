@@ -1,4 +1,4 @@
 #! /usr/bin/env python
-import concert_simple_scheduler.main
+from concert_simple_scheduler.scheduler_node import main
 if __name__ == '__main__':
-    concert_simple_scheduler.main()
+    main()
