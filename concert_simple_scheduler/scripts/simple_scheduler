@@ -1,0 +1,4 @@
+#! /usr/bin/env python
+import concert_simple_scheduler.main
+if __name__ == '__main__':
+    concert_simple_scheduler.main()
