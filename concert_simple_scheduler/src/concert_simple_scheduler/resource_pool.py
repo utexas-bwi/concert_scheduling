@@ -44,7 +44,7 @@ This module tracks all known resources managed by this scheduler.  The ROS
 
 """
 import copy
-import itertools
+from itertools import chain, islice, permutations
 
 ## ROS messages
 from scheduler_msgs.msg import Resource
@@ -74,8 +74,7 @@ class ResourcePool:
         """ Try to allocate all resources for a *request*.
 
         :param request: Scheduler request message, some resources may
-            include regular expression syntax.  *Does not modify this
-            request.*
+            include regular expression syntax.
         :type request: ``scheduler_msgs/Request``
 
         :returns: List of ``scheduler_msgs/Resource`` messages
@@ -83,24 +82,37 @@ class ResourcePool:
             resolved; or ``[]`` if not everything is available.
 
         If successful, matching ROCON resources are allocated to this
-        *request*.
+        *request*.  Otherwise, the *request* remains unchanged.
 
         """
+        n_wanted = len(request.resources)  # number of resources wanted
+
         # Make a list containing sets of the available resources
         # matching each requested item.
         matches = self.match_list(request.resources)
         if not matches:                 # unsuccessful?
             return []                   # give up
 
+        # See if there are as least as many different resources in the
+        # matches set as the number requested.
+        match_union = set(chain.from_iterable(matches))
+        if len(match_union) < n_wanted:
+            return []                   # not enough stuff
+
         # At least one resource is available that satisfies each item
-        # requested.  Look for a permutation that satisfies them all.
-        #
-        # If the list is long, n! permutations will take too much
-        # time.  TODO: Figure out a good heuristic to use with long
-        # lists, maybe just trying them once in the original order.
-        for perm in itertools.permutations(range(len(alloc))):
+        # requested.  Try to allocate them all in the order requested.
+        alloc = self.allocate_permutation(range(n_wanted), request.resources)
+        if alloc:                       # successful?
+            # allocate to this request
+            return alloc
+        if n_wanted > 3:                # lots of permutations?
+            return []                   # give up
+
+        # Look for some other permutation that satisfies them all.
+        for perm in islice(permutations(range(n_wanted)), 1, None):
             alloc = self.allocate_permutation(perm, request.resources)
             if alloc:                   # successful?
+                # allocate to this request
                 return alloc
         return []                       # failure
 
@@ -113,7 +125,9 @@ class ResourcePool:
         Make a list containing sets of the available resources
         matching each element of *resources*.
 
-        :returns: List of :class:`.ResourceSet` containing matching
+        *What if list is empty?*
+
+        :returns: List of :class:`set` containing names of matching
             resources, empty if any item cannot be satisfied.
         """
         matches = []
@@ -122,17 +136,18 @@ class ResourcePool:
             if len(match_set) == 0:     # no matches for this resource?
                 return []               # give up
             matches.append(match_set)
+        return matches
 
     def match_subset(self, resource_request):
         """ Find all resources matching *resource_request*.
 
-        :returns: :class:`.ResourceSet` containing matching resources.
+        :returns: :class:`set` containing matching resource names.
         """
-        avail = ResourceSet()
-        for res in self.pool.resources.values():
+        avail = set()
+        for name, res in self.pool.resources.values():
             if (res.status == CurrentStatus.AVAILABLE
                     and res.match(resource_request)):
-                avail.add(res)
+                avail.add(name)
         return avail
 
     def release(self, resources):

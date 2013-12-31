@@ -82,9 +82,6 @@ class SchedulerNode:
         """ Grant any available resources to waiting requests. """
         queue_next = 0
         while queue_next < len(self.ready_queue):
-            #avail = self.pool.match_subset(CurrentStatus.AVAILABLE)
-            #if len(avail) == 0:         # nothing available?
-            #    return
             requester_id, rq = self.ready_queue[queue_next]
             queue_next += 1
             resources = self.pool.allocate(rq.msg)
