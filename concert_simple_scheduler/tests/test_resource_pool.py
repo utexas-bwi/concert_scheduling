@@ -10,7 +10,7 @@ import unittest
 
 # ROS dependencies
 import unique_id
-from scheduler_msgs.msg import Resource
+from scheduler_msgs.msg import Request, Resource
 try:
     from scheduler_msgs.msg import CurrentStatus
 except ImportError:
@@ -21,16 +21,23 @@ from rocon_scheduler_requests.resources import ResourceSet
 from concert_simple_scheduler.resource_pool import *
 
 # some resources for testing
+RQR_UUID = uuid.UUID('01234567-89ab-cdef-0123-456789abcdef')
 EXAMPLE_RAPP = 'tests/example_rapp'
-TEST_RAPPS = set(('rocon_apps/teleop', EXAMPLE_RAPP))
-MARVIN = CurrentStatus(
-    platform_info='rocon:///linux/precise/ros/turtlebot/marvin',
-    rapps=TEST_RAPPS)
-ROBERTO = CurrentStatus(
-    platform_info='rocon:///linux/precise/ros/turtlebot/roberto',
-    rapps=TEST_RAPPS)
+TELEOP_RAPP = 'rocon_apps/teleop'
+TEST_RAPPS = set((TELEOP_RAPP, EXAMPLE_RAPP))
+MARVIN_NAME = 'rocon:///linux/precise/ros/turtlebot/marvin'
+MARVIN = CurrentStatus(platform_info=MARVIN_NAME, rapps=TEST_RAPPS)
+ROBERTO_NAME = 'rocon:///linux/precise/ros/turtlebot/roberto'
+ROBERTO = CurrentStatus(platform_info=ROBERTO_NAME, rapps=TEST_RAPPS)
 SINGLETON_POOL = KnownResources(resources=[ROBERTO])
 DOUBLETON_POOL = KnownResources(resources=[MARVIN, ROBERTO])
+
+# some useful Resource and Request messages
+MARVIN_RESOURCE = Resource(name=TELEOP_RAPP, platform_info=MARVIN_NAME)
+ROBERTO_RESOURCE = Resource(name=TELEOP_RAPP, platform_info=ROBERTO_NAME)
+ROBERTO_REQUEST = Request(
+    id=unique_id.toMsg(RQR_UUID),
+    resources=[ROBERTO_RESOURCE])
 
 
 class TestResourcePool(unittest.TestCase):
@@ -47,23 +54,39 @@ class TestResourcePool(unittest.TestCase):
         rp0 = ResourcePool()
         self.assertIsNotNone(rp0)
         self.assertEqual(len(rp0.pool), 0)
-        self.assertNotIn(MARVIN.platform_info, rp0.pool)
+        self.assertNotIn(MARVIN_NAME, rp0.pool)
 
     def test_one_resource_constructor(self):
         rp1 = ResourcePool(ResourceSet(SINGLETON_POOL))
         self.assertEqual(len(rp1.pool), 1)
-        self.assertIn(ROBERTO.platform_info, rp1.pool)
-        self.assertNotIn(MARVIN.platform_info, rp1.pool)
+        self.assertIn(ROBERTO_NAME, rp1.pool)
+        self.assertNotIn(MARVIN_NAME, rp1.pool)
         self.assertMultiLineEqual(str(rp1.pool),
                                   str(ResourceSet(SINGLETON_POOL)))
 
     def test_two_resource_constructor(self):
         rp2 = ResourcePool(ResourceSet(DOUBLETON_POOL))
         self.assertEqual(len(rp2.pool), 2)
-        self.assertIn(ROBERTO.platform_info, rp2.pool)
-        self.assertIn(MARVIN.platform_info, rp2.pool)
+        self.assertIn(ROBERTO_NAME, rp2.pool)
+        self.assertIn(MARVIN_NAME, rp2.pool)
         self.assertMultiLineEqual(str(rp2.pool),
                                   str(ResourceSet(DOUBLETON_POOL)))
+
+    def test_exact_resource_allocation(self):
+        rp2 = ResourcePool(ResourceSet(DOUBLETON_POOL))
+
+        res = copy.deepcopy(ROBERTO_RESOURCE)
+        subset = rp2.match_subset(res)
+        self.assertIn(ROBERTO_NAME, subset)
+        self.assertEqual(subset, set([ROBERTO_NAME]))
+        self.assertEqual(rp2.match_list([ROBERTO_RESOURCE]),
+                         [set([ROBERTO_NAME])])
+
+        self.assertEqual(rp2._allocate_permutation([0], [ROBERTO_RESOURCE]),
+                         [ROBERTO_RESOURCE])
+
+        rq = copy.deepcopy(ROBERTO_REQUEST)
+        self.assertEqual(rp2.allocate(rq), [ROBERTO_RESOURCE])
 
 if __name__ == '__main__':
     import rosunit

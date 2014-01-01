@@ -65,7 +65,7 @@ class ResourcePool:
     """
     def __init__(self, resources=None):
         self.pool = resources
-        """ Current resource pool contents. """
+        """ :class:`.ResourceSet` of current resource pool contents. """
         if resources is None:
             self.pool = ResourceSet()   # pool initially empty
 
@@ -100,7 +100,7 @@ class ResourcePool:
 
         # At least one resource is available that satisfies each item
         # requested.  Try to allocate them all in the order requested.
-        alloc = self.allocate_permutation(range(n_wanted), request.resources)
+        alloc = self._allocate_permutation(range(n_wanted), request.resources)
         if alloc:                       # successful?
             # allocate to this request
             return alloc
@@ -109,14 +109,14 @@ class ResourcePool:
 
         # Look for some other permutation that satisfies them all.
         for perm in islice(permutations(range(n_wanted)), 1, None):
-            alloc = self.allocate_permutation(perm, request.resources)
+            alloc = self._allocate_permutation(perm, request.resources)
             if alloc:                   # successful?
                 # allocate to this request
                 return alloc
         return []                       # failure
 
-    def allocate_permutation(perm, resources):
-        print(str(perm), + '\nresources:\n' + resources)
+    def _allocate_permutation(self, perm, resources):
+        #print(str(perm) + '\nresources:\n' + str(resources))
         return copy.deepcopy(resources)  # copy fake results
 
     def match_list(self, resources):
@@ -140,13 +140,16 @@ class ResourcePool:
     def match_subset(self, resource_request):
         """ Find all resources matching *resource_request*.
 
+        :param resource_request: Resource message from scheduler Request.
+        :type resource_request: ``scheduler_msgs/Resource``
+
         :returns: :class:`set` containing matching resource names.
         """
         avail = set()
-        for name, res in self.pool.resources.values():
+        for res in self.pool.resources.values():
             if (res.status == CurrentStatus.AVAILABLE
                     and res.match(resource_request)):
-                avail.add(name)
+                avail.add(res.platform_info)
         return avail
 
     def release(self, resources):
