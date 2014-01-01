@@ -48,27 +48,26 @@ from itertools import chain, islice, permutations
 
 ## ROS messages
 from scheduler_msgs.msg import Resource
-#from scheduler_msgs.msg import CurrentStatus, KnownResources
-from rocon_scheduler_requests.resources import CurrentStatus, KnownResources
+try:
+    from scheduler_msgs.msg import CurrentStatus, KnownResources
+except ImportError:
+    from rocon_scheduler_requests.resources import CurrentStatus, KnownResources
 
 from rocon_scheduler_requests.resources import ResourceSet
 
-# some resources for testing
-TEST_RAPPS = set(('rocon_apps/teleop', 'example/rapp'))
-MARVIN = CurrentStatus(
-    platform_info='rocon:///linux/precise/ros/turtlebot/marvin',
-    rapps=TEST_RAPPS)
-ROBERTO = CurrentStatus(
-    platform_info='rocon:///linux/precise/ros/turtlebot/roberto',
-    rapps=TEST_RAPPS)
-TEST_DATA = [MARVIN, ROBERTO]           # test resources
-
 
 class ResourcePool:
-    def __init__(self, iterable=None):
-        if iterable is None:
-            iterable = TEST_DATA
-        self.pool = ResourceSet(iterable)
+    """ This class tracks a pool of resources managed by this scheduler.
+
+    :param resources: Initial resources for the pool.
+    :type resources: :class:`.ResourceSet` or ``None``
+
+    """
+    def __init__(self, resources=None):
+        self.pool = resources
+        """ Current resource pool contents. """
+        if resources is None:
+            self.pool = ResourceSet()   # pool initially empty
 
     def allocate(self, request):
         """ Try to allocate all resources for a *request*.
