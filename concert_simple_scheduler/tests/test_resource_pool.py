@@ -81,12 +81,11 @@ class TestResourcePool(unittest.TestCase):
         self.assertEqual(subset, set([ROBERTO_NAME]))
         self.assertEqual(rp2.match_list([ROBERTO_RESOURCE]),
                          [set([ROBERTO_NAME])])
-
-        self.assertEqual(rp2._allocate_permutation([0], [ROBERTO_RESOURCE]),
-                         [ROBERTO_RESOURCE])
-
         rq = copy.deepcopy(ROBERTO_REQUEST)
-        self.assertEqual(rp2.allocate(rq), [ROBERTO_RESOURCE])
+        alloc = rp2.allocate(rq)
+        self.assertEqual(alloc[0], ROBERTO_RESOURCE)
+        self.assertEqual(rp2.pool[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
+        self.assertEqual(rp2.pool[ROBERTO_NAME].owner, RQR_UUID)
 
 if __name__ == '__main__':
     import rosunit

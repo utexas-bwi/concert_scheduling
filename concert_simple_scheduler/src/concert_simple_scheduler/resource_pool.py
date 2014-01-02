@@ -45,6 +45,7 @@ This module tracks all known resources managed by this scheduler.  The ROS
 """
 import copy
 from itertools import chain, islice, permutations
+import unique_id
 
 ## ROS messages
 from scheduler_msgs.msg import Resource
@@ -100,24 +101,30 @@ class ResourcePool:
 
         # At least one resource is available that satisfies each item
         # requested.  Try to allocate them all in the order requested.
-        alloc = self._allocate_permutation(range(n_wanted), request.resources)
+        alloc = self._allocate_permutation(range(n_wanted), request, matches)
         if alloc:                       # successful?
-            # allocate to this request
             return alloc
         if n_wanted > 3:                # lots of permutations?
             return []                   # give up
 
         # Look for some other permutation that satisfies them all.
         for perm in islice(permutations(range(n_wanted)), 1, None):
-            alloc = self._allocate_permutation(perm, request.resources)
+            alloc = self._allocate_permutation(perm, request, matches)
             if alloc:                   # successful?
-                # allocate to this request
                 return alloc
         return []                       # failure
 
-    def _allocate_permutation(self, perm, resources):
-        #print(str(perm) + '\nresources:\n' + str(resources))
-        return copy.deepcopy(resources)  # copy fake results
+    def _allocate_permutation(self, perm, request, matches):
+        # stub implementation: copy fake results
+        alloc = copy.deepcopy(request.resources)
+
+        # successful: allocate to this request
+        req_id = unique_id.fromMsg(request.id)
+        for i in perm:
+            name = matches[i].pop()     # pick some random match
+            matches[i].add(name)        # put it back in the set
+            self.pool[name].allocate(req_id)
+        return alloc
 
     def match_list(self, resources):
         """
