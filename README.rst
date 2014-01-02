@@ -11,5 +11,5 @@ Links to documentation:
  * `concert_simple_scheduler`_
 
 .. _`Robotics in Concert`: http://www.robotconcert.org/wiki/Main_Page
-.. _`concert_simple_scheduler`: http://farnsworth.csres.utexas.edu/docs/concert_simple_scheduler
+.. _`concert_simple_scheduler`: http://farnsworth.csres.utexas.edu/docs/concert_simple_scheduler/html
 
