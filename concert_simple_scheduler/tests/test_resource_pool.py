@@ -15,13 +15,14 @@ try:
     from scheduler_msgs.msg import CurrentStatus
 except ImportError:
     from rocon_scheduler_requests.resources import CurrentStatus
+from rocon_scheduler_requests.transitions import ResourceReply
 from rocon_scheduler_requests.resources import ResourceSet
 
 # module being tested:
 from concert_simple_scheduler.resource_pool import *
 
 # some resources for testing
-RQR_UUID = uuid.UUID('01234567-89ab-cdef-0123-456789abcdef')
+RQ_UUID = uuid.UUID('01234567-89ab-cdef-0123-456789abcdef')
 EXAMPLE_RAPP = 'tests/example_rapp'
 TELEOP_RAPP = 'rocon_apps/teleop'
 TEST_RAPPS = set((TELEOP_RAPP, EXAMPLE_RAPP))
@@ -35,9 +36,9 @@ DOUBLETON_POOL = KnownResources(resources=[MARVIN, ROBERTO])
 # some useful Resource and Request messages
 MARVIN_RESOURCE = Resource(name=TELEOP_RAPP, platform_info=MARVIN_NAME)
 ROBERTO_RESOURCE = Resource(name=TELEOP_RAPP, platform_info=ROBERTO_NAME)
-ROBERTO_REQUEST = Request(
-    id=unique_id.toMsg(RQR_UUID),
-    resources=[ROBERTO_RESOURCE])
+ROBERTO_REQUEST = ResourceReply(Request(
+    id=unique_id.toMsg(RQ_UUID),
+    resources=[ROBERTO_RESOURCE]))
 
 
 class TestResourcePool(unittest.TestCase):
@@ -74,7 +75,6 @@ class TestResourcePool(unittest.TestCase):
 
     def test_exact_resource_allocation(self):
         rp2 = ResourcePool(ResourceSet(DOUBLETON_POOL))
-
         res = copy.deepcopy(ROBERTO_RESOURCE)
         subset = rp2.match_subset(res)
         self.assertIn(ROBERTO_NAME, subset)
@@ -85,7 +85,34 @@ class TestResourcePool(unittest.TestCase):
         alloc = rp2.allocate(rq)
         self.assertEqual(alloc[0], ROBERTO_RESOURCE)
         self.assertEqual(rp2.pool[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
-        self.assertEqual(rp2.pool[ROBERTO_NAME].owner, RQR_UUID)
+        self.assertEqual(rp2.pool[ROBERTO_NAME].owner, RQ_UUID)
+
+    def test_deallocate_one_resource(self):
+        rp2 = ResourcePool(ResourceSet(DOUBLETON_POOL))
+        self.assertEqual(rp2.pool[ROBERTO_NAME].status, CurrentStatus.AVAILABLE)
+
+        rq = copy.deepcopy(ROBERTO_REQUEST)
+        alloc = rp2.allocate(rq)
+        self.assertEqual(rp2.pool[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
+        self.assertEqual(rp2.pool[ROBERTO_NAME].owner, RQ_UUID)
+
+        rp2.deallocate(alloc)
+        self.assertEqual(rp2.pool[ROBERTO_NAME].status, CurrentStatus.AVAILABLE)
+        self.assertEqual(rp2.pool[ROBERTO_NAME].owner, None)
+
+    def test_release_one_resource(self):
+        rp2 = ResourcePool(ResourceSet(DOUBLETON_POOL))
+        self.assertEqual(rp2.pool[ROBERTO_NAME].status, CurrentStatus.AVAILABLE)
+
+        rq = copy.deepcopy(ROBERTO_REQUEST)
+        alloc = rp2.allocate(rq)
+        rq.grant(alloc)
+        self.assertEqual(rp2.pool[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
+        self.assertEqual(rp2.pool[ROBERTO_NAME].owner, RQ_UUID)
+
+        rp2.release(rq)
+        self.assertEqual(rp2.pool[ROBERTO_NAME].status, CurrentStatus.AVAILABLE)
+        self.assertEqual(rp2.pool[ROBERTO_NAME].owner, None)
 
 if __name__ == '__main__':
     import rosunit

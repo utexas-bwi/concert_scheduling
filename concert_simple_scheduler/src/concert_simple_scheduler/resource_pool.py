@@ -57,7 +57,7 @@ except ImportError:
 from rocon_scheduler_requests.resources import ResourceSet
 
 
-class ResourcePool:
+class ResourcePool(object):
     """ This class tracks a pool of resources managed by this scheduler.
 
     :param resources: Initial resources for the pool.
@@ -75,7 +75,7 @@ class ResourcePool:
 
         :param request: Scheduler request message, some resources may
             include regular expression syntax.
-        :type request: ``scheduler_msgs/Request``
+        :type request: :class:`.ResourceReply`
 
         :returns: List of ``scheduler_msgs/Resource`` messages
             allocated, in requested order with platform info fully
@@ -85,11 +85,11 @@ class ResourcePool:
         *request*.  Otherwise, the *request* remains unchanged.
 
         """
-        n_wanted = len(request.resources)  # number of resources wanted
+        n_wanted = len(request.msg.resources)  # number of resources wanted
 
         # Make a list containing sets of the available resources
         # matching each requested item.
-        matches = self.match_list(request.resources)
+        matches = self.match_list(request.msg.resources)
         if not matches:                 # unsuccessful?
             return []                   # give up
 
@@ -116,15 +116,32 @@ class ResourcePool:
 
     def _allocate_permutation(self, perm, request, matches):
         # stub implementation: copy fake results
-        alloc = copy.deepcopy(request.resources)
+        alloc = copy.deepcopy(request.msg.resources)
 
         # successful: allocate to this request
-        req_id = unique_id.fromMsg(request.id)
+        req_id = request.get_uuid()
         for i in perm:
             name = matches[i].pop()     # pick some random match
             matches[i].add(name)        # put it back in the set
             self.pool[name].allocate(req_id)
         return alloc
+
+    def deallocate(self, resources):
+        """ De-allocate a list of *resources*.
+
+        This makes newly-allocated resources available again when they
+        cannot be assigned to the request for some reason.
+
+        .. note::
+
+            The state transition should happen at a lower level.
+
+        """
+        for res in resources:
+            pool_res = self.pool[res.platform_info]
+            pool_res.owner = None
+            if pool_res.status == CurrentStatus.ALLOCATED:
+                pool_res.status = CurrentStatus.AVAILABLE
 
     def match_list(self, resources):
         """
@@ -159,6 +176,12 @@ class ResourcePool:
                 avail.add(res.platform_info)
         return avail
 
-    def release(self, resources):
-        """ Release all the *resources* in this list. """
-        pass                            # stub, nothing released
+    def release(self, request):
+        """ Release all the resources owned by this *request*. 
+
+        :param request: Current owner of resources to release.
+        :type request: :class:`.ResourceReply`
+        """
+        rq_id = request.get_uuid()
+        for res in request.allocations:
+            self.pool[res.platform_info].release(rq_id)
