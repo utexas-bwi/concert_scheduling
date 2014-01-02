@@ -39,6 +39,8 @@ This module tracks all known resources managed by this scheduler.  The ROS
 
 .. _ROCON: http://www.robotconcert.org/wiki/Main_Page
 .. _`Robotics in Concert`: http://www.robotconcert.org/wiki/Main_Page
+.. _`scheduler_msgs/Resource`:
+    http://docs.ros.org/api/scheduler_msgs/html/msg/Resource.html
 .. _`scheduler_msgs/KnownResources`:
     http://docs.ros.org/api/scheduler_msgs/html/msg/KnownResources.html
 
