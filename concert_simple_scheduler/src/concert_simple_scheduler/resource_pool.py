@@ -172,10 +172,12 @@ class ResourcePool(object):
             self.pool[res.platform_info].release(rq_id)
 
     def release_resources(self, resources):
-        """ De-allocate a list of *resources*.
+        """ Release a list of *resources*.
 
-        This makes newly-allocated resources available again when they
-        cannot be assigned to the request for some reason.
+        :param resources: List of ``scheduler_msgs/Resource`` messages.
+
+        This makes newly allocated *resources* available again when
+        they cannot be assigned to a request for some reason.
 
         """
         for res in resources:
