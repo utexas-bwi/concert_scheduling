@@ -134,16 +134,10 @@ class ResourcePool(object):
         This makes newly-allocated resources available again when they
         cannot be assigned to the request for some reason.
 
-        .. note::
-
-            The state transition should happen at a lower level.
-
         """
         for res in resources:
             pool_res = self.pool[res.platform_info]
-            pool_res.owner = None
-            if pool_res.status == CurrentStatus.ALLOCATED:
-                pool_res.status = CurrentStatus.AVAILABLE
+            pool_res.release()
 
     def match_list(self, resources):
         """
