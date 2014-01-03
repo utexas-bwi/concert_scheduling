@@ -1,0 +1,18 @@
+<!-- rostest launch file for Python simple scheduler test
+
+     This unit test uses rostest because it requires a ROS environment.  
+-->
+
+<launch>
+
+  <!-- start simple scheduler node -->
+  <node pkg="concert_simple_scheduler" type="simple_scheduler"
+        name="fifo_scheduler" />
+
+  <!-- start requester unit test node -->
+  <test test-name="simple_scheduler_test"
+        pkg="concert_simple_scheduler" type="requester_test.py"
+        name="simple_scheduler_test" time-limit="30.0" />
+
+
+</launch>

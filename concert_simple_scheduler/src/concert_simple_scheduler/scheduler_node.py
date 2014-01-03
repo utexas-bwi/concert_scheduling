@@ -59,63 +59,97 @@ from scheduler_msgs.msg import Request, Resource
 from .resource_pool import ResourcePool
 
 
-class SchedulerNode:
+class FifoSchedulerNode(object):
+    """ First come, first served (FIFO) scheduler node.
 
-    def __init__(self):
-        rospy.init_node("simple_scheduler")
+    :param node_name: (str) Default name of scheduler node.
+
+    Derived versions of this class can implement different scheduling
+    policies.
+    """
+    def __init__(self, node_name='fifo_scheduler'):
+        """ Constructor. """
+        rospy.init_node(node_name)
         self.pool = ResourcePool()
         self.ready_queue = deque()      # FIFO queue of waiting requests
+        self.blocked_queue = deque()    # FIFO queue of blocked requests
         self.sch = Scheduler(self.callback)
         rospy.spin()
 
     def callback(self, rset):
-        """ Scheduler request callback. """
+        """ Scheduler request callback.
+
+        See: :class:`.rocon_scheduler_requests.Scheduler` documentation.
+        """
         rospy.logdebug('scheduler callback:')
         for rq in rset.values():
             rospy.logdebug('  ' + str(rq))
             if rq.msg.status == Request.NEW:
-                self.queue(rset.requester_id, rq)
+                self.queue_ready(rq, rset.requester_id)
             elif rq.msg.status == Request.CANCELING:
-                self.free(rset.requester_id, rq)
+                self.free(rq, rset.requester_id)
 
     def dispatch(self):
-        """ Grant any available resources to waiting requests. """
-        queue_next = 0
-        while queue_next < len(self.ready_queue):
-            requester_id, rq = self.ready_queue[queue_next]
-            queue_next += 1
-            resources = self.pool.allocate(rq.msg)
-            if resources:
-                try:                    # grant request & notify requester
-                    rq.grant(resources)
-                    rospy.loginfo('Request granted: ' + str(rq.get_uuid()))
-                except TransitionError:  # Request no longer active?
-                    # Return allocated resources to the pool.
-                    self.pool.release_resources(resources)
-                try:
-                    self.sch.notify(requester_id)
-                except KeyError:        # Requester missing now?
-                    # Release allocated resources.
-                    self.pool.release_request(rq)
+        """ Grant any available resources to ready requests. """
+        while len(self.ready_queue) > 0:
+            rq, requester_id = self.ready_queue.popleft()
+            resources = None
+            resources = self.pool.allocate(rq)
+            if not resources:           # oldest request cannot be satisfied?
+                # Return it to head of queue.
+                self.ready_queue.appendleft((rq, requester_id))
+                return
+            try:
+                rq.grant(resources)
+                rospy.loginfo('Request granted: ' + str(rq.get_uuid()))
+            except TransitionError:     # request no longer active?
+                # Return allocated resources to the pool.
+                self.pool.release_resources(resources)
+            try:
+                self.sch.notify(requester_id)
+            except KeyError:            # requester now missing?
+                # Release request allocation.
+                self.pool.release_request(rq)
 
+    def free(self, request, requester_id):
+        """ Free all resources allocated for this *request*.
 
-    def free(self, requester_id, rq):
-        """ Free all resources allocated for this request. """
-        self.pool.release_request(rq)
-        rospy.loginfo('Request canceled: ' + str(rq.get_uuid()))
-        rq.close()
+        :param request: (:class:`.RequestReply`) 
+        :param requester_id: (:class:`uuid.UUID`) Unique requester identifier.
+        """
+        self.pool.release_request(request)
+        rospy.loginfo('Request canceled: ' + str(request.get_uuid()))
+        request.close()
         self.dispatch()                 # grant waiting requests
 
-    def queue(self, requester_id, rq):
-        """ Add request to ready queue, making it wait. """
+    def queue_blocked(self, request, requester_id):
+        """ Add request to blocked queue.
+
+        :param request: (:class:`.RequestReply`) 
+        :param requester_id: (:class:`uuid.UUID`) Unique requester identifier.
+        """
         try:
-            rq.wait(reason=Request.BUSY)
+            request.wait(reason=Request.UNAVAILABLE)
         except TransitionError:         # request no longer active?
             return
-        self.ready_queue.append((requester_id, rq))
-        rospy.loginfo('Request queued: ' + str(rq.get_uuid()))
+        self.blocked_queue.append((requester_id, request))
+        rospy.loginfo('Request blocked: ' + str(request.get_uuid()))
+
+    def queue_ready(self, request, requester_id):
+        """ Add request to ready queue, making it wait. 
+
+        :param request: (:class:`.RequestReply`) 
+        :param requester_id: (:class:`uuid.UUID`) Unique requester identifier.
+        """
+        try:
+            request.wait(reason=Request.BUSY)
+        except TransitionError:         # request no longer active?
+            return
+        self.ready_queue.append((request, requester_id))
+        rospy.loginfo('Request queued: ' + str(request.get_uuid()))
         self.dispatch()
 
 
 def main():
-    node = SchedulerNode()
+    """ Scheduler node main entry point. """
+    node = FifoSchedulerNode()
