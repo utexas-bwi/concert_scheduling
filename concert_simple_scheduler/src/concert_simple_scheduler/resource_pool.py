@@ -128,17 +128,6 @@ class ResourcePool(object):
             self.pool[name].allocate(req_id)
         return alloc
 
-    def deallocate(self, resources):
-        """ De-allocate a list of *resources*.
-
-        This makes newly-allocated resources available again when they
-        cannot be assigned to the request for some reason.
-
-        """
-        for res in resources:
-            pool_res = self.pool[res.platform_info]
-            pool_res.release()
-
     def match_list(self, resources):
         """
         Make a list containing sets of the available resources
@@ -172,7 +161,7 @@ class ResourcePool(object):
                 avail.add(res.platform_info)
         return avail
 
-    def release(self, request):
+    def release_request(self, request):
         """ Release all the resources owned by this *request*. 
 
         :param request: Current owner of resources to release.
@@ -181,3 +170,14 @@ class ResourcePool(object):
         rq_id = request.get_uuid()
         for res in request.allocations:
             self.pool[res.platform_info].release(rq_id)
+
+    def release_resources(self, resources):
+        """ De-allocate a list of *resources*.
+
+        This makes newly-allocated resources available again when they
+        cannot be assigned to the request for some reason.
+
+        """
+        for res in resources:
+            pool_res = self.pool[res.platform_info]
+            pool_res.release()

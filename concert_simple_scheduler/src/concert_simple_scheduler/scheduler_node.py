@@ -91,17 +91,17 @@ class SchedulerNode:
                     rospy.loginfo('Request granted: ' + str(rq.get_uuid()))
                 except TransitionError:  # Request no longer active?
                     # Return allocated resources to the pool.
-                    self.pool.deallocate(resources)
+                    self.pool.release_resources(resources)
                 try:
                     self.sch.notify(requester_id)
                 except KeyError:        # Requester missing now?
                     # Release allocated resources.
-                    self.pool.release(rq)
+                    self.pool.release_request(rq)
 
 
     def free(self, requester_id, rq):
         """ Free all resources allocated for this request. """
-        self.pool.release(rq)
+        self.pool.release_request(rq)
         rospy.loginfo('Request canceled: ' + str(rq.get_uuid()))
         rq.close()
         self.dispatch()                 # grant waiting requests
