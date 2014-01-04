@@ -220,7 +220,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'concert_simple_scheduler',
-     u'ROCON Concert Simple Scheduler.',
+     u'Concert Simple Scheduler.',
      [u'Jack O\'Quin'], 1)
 ]
 

@@ -53,8 +53,8 @@ class TestTimeoutRequester(unittest.TestCase):
 
         :returns: UUID of new request sent.
         """
-        bot = Resource(name='example_rapp',
-                       platform_info='*.*.ros.turtlebot.*')
+        bot = Resource(name='tests/example_rapp',
+                       platform_info='rocon:///.*/.*/ros/turtlebot/.*')
         rq_id = self.rqr.new_request([bot])
         rospy.loginfo('  new request: ' + str(rq_id))
         return rq_id
