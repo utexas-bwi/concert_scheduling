@@ -17,6 +17,7 @@ from rocon_scheduler_requests.transitions import ResourceReply
 from concert_simple_scheduler.request_queue import *
 
 # some resources for testing
+RQR_ID = uuid.uuid4()
 RQ1_UUID = uuid.uuid4()
 RQ2_UUID = uuid.uuid4()
 EXAMPLE_RAPP = 'tests/example_rapp'
@@ -36,16 +37,76 @@ ROBERTO_REQUEST = ResourceReply(Request(
     resources=[ROBERTO_RESOURCE]))
 
 
-class TestRequestQueue(unittest.TestCase):
-    """Unit tests for simple scheduler request queue class.
+###############################
+# queue element tests
+###############################
+
+
+class TestQueueElement(unittest.TestCase):
+    """Unit tests for queue element class.
 
     These tests do not require a running ROS core.
     """
+    def test_constructor(self):
+        qe1 = QueueElement(ROBERTO_REQUEST, RQR_ID)
+        qe2 = QueueElement(MARVIN_REQUEST, RQR_ID)
+        self.assertNotEqual(qe1, qe2)
 
-    ###############################
-    # scheduler request queue tests
-    ###############################
+    def test_hash(self):
+        qe1 = QueueElement(ROBERTO_REQUEST, RQR_ID)
+        qe2 = QueueElement(MARVIN_REQUEST, RQR_ID)
+        self.assertNotEqual(qe1, qe2)
+        self.assertNotEqual(hash(qe1), hash(qe2))
+        qe3 = QueueElement(ROBERTO_REQUEST, RQR_ID)
+        self.assertEqual(qe1, qe3)
+        self.assertEqual(hash(qe1), hash(qe3))
 
+    def test_sort_diff_priority(self):
+        qe1 = QueueElement(ResourceReply(
+                Request(id=unique_id.toMsg(RQ1_UUID),
+                        resources=[ROBERTO_RESOURCE],
+                        priority=10)
+                ), RQR_ID)
+        qe2 = QueueElement(ResourceReply(
+                Request(id=unique_id.toMsg(RQ1_UUID),
+                        resources=[MARVIN_RESOURCE],
+                        priority=0)
+                ), RQR_ID)
+        self.assertLess(qe1, qe2)
+        self.assertEqual(sorted([qe2, qe1]), [qe1, qe2])
+        qe3 = QueueElement(ResourceReply(
+                Request(id=unique_id.toMsg(RQ1_UUID),
+                        resources=[ROBERTO_RESOURCE])
+                ), RQR_ID)
+        qe4 = QueueElement(ResourceReply(
+                Request(id=unique_id.toMsg(RQ1_UUID),
+                        resources=[MARVIN_RESOURCE])
+                ), RQR_ID)
+        self.assertEqual(sorted([qe4, qe3]), [qe3, qe4])
+        self.assertEqual(sorted([qe4, qe1, qe3, qe2]),
+                         [qe1, qe2, qe3, qe4])
+
+    def test_sort_same_priority(self):
+        qe1 = QueueElement(ROBERTO_REQUEST, RQR_ID)
+        qe2 = QueueElement(MARVIN_REQUEST, RQR_ID)
+        self.assertLess(qe1, qe2)
+        list1 = [qe1]
+        self.assertEqual(sorted(list1), [qe1])
+        list2 = [qe2, qe1]
+        list2.sort()                    # sort in-place
+        self.assertEqual(list2, [qe1, qe2])
+
+
+###############################
+# scheduler request queue tests
+###############################
+
+
+class TestRequestQueue(unittest.TestCase):
+    """Unit tests for simple scheduler FIFO request queue class.
+
+    These tests do not require a running ROS core.
+    """
     def test_append_one_resource(self):
         rqq1 = RequestQueue()
         self.assertEqual(len(rqq1), 0)
@@ -89,6 +150,9 @@ class TestRequestQueue(unittest.TestCase):
 
 if __name__ == '__main__':
     import rosunit
+    rosunit.unitrun('concert_simple_scheduler',
+                    'test_queue_element',
+                    TestQueueElement)
     rosunit.unitrun('concert_simple_scheduler',
                     'test_request_queue',
                     TestRequestQueue)

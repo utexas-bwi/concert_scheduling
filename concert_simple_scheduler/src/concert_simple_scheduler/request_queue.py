@@ -51,13 +51,64 @@ class QueueElement(object):
     :param requester_id: Unique identifier of requester.
     :type requester_id: :class:`uuid.UUID`
 
-    Different scheduling policies may provide derived subclasses.
+    Queue elements need fit into normal Python dictionaries, so they
+    provide the required ``hash()`` operator, based on the unique ID
+    of that *request*.
+
+    .. describe:: hash(qe)
+
+       :returns: (int) Hash signature for *qe*.
+
+    Python 3 requires that hashable objects must also provide an
+    equals operator.  The hash signatures of equal requests must be
+    equal.
+
+    .. describe:: qe == other
+
+       :returns: ``True`` if the *qe* and *other* have the same
+           *request* ID (*not* their *requester_id* values).
+
+    Queue elements need to sort in the normal Python way, so they
+    provide the required ``<`` operator.  The ``__cmp__`` method is
+    not used, because Python 3 does not allow it.  **But**, we want
+    requests with higher-numbered priorities to sort *ahead* of lower
+    priority ones, so :py:mod:`heapq` and other Python modules work
+    properly.
+
+    .. describe:: qe < other
+
+       :returns: ``True`` if *qe* has higher priority than *other*, or
+           their priorities are the same and *qe* has a lower sequence
+           number.
+    
+    This class does *not* provide a total ordering.  The ``==`` and
+    ``<`` operators test completely different fields.  However, the
+    *request* identifiers are unique, so no two queue elements should
+    ever compare both equal and less.
+
     """
+    _sequence = 0
+    """ Class variable: sequence number of next instance. """
+
     def __init__(self, request, requester_id):
         self.request = request
         """ Corresponding scheduler request object. """
         self.requester_id = requester_id
         """ :class:`uuid.UUID` of requester. """
+        self.sequence = self.__class__._sequence
+        """ Unique sequence number of this element. """
+        self.__class__._sequence += 1
+
+    def __eq__(self, other):
+        return self.request.msg.id == other.request.msg.id
+
+    def __hash__(self):
+        return hash(self.request.get_uuid())
+
+    def __lt__(self, other):
+        return (self.request.msg.priority > other.request.msg.priority
+                or (self.request.msg.priority == other.request.msg.priority
+                    and self.sequence < other.sequence))
 
 
 class RequestQueue(object):
