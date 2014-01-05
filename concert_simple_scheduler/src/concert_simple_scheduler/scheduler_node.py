@@ -48,8 +48,6 @@ on a `first come, first served`_ basis.
 .. _`Robotics in Concert`: http://www.robotconcert.org/wiki/Main_Page
 
 """
-from collections import deque
-
 import rospy
 from rocon_scheduler_requests import Scheduler, TransitionError
 
@@ -57,6 +55,7 @@ from rocon_scheduler_requests import Scheduler, TransitionError
 from scheduler_msgs.msg import Request, Resource
 
 from .resource_pool import ResourcePool
+from .request_queue import QueueElement, RequestQueue
 
 
 class FifoSchedulerNode(object):
@@ -71,8 +70,10 @@ class FifoSchedulerNode(object):
         """ Constructor. """
         rospy.init_node(node_name)
         self.pool = ResourcePool()
-        self.ready_queue = deque()      # FIFO queue of waiting requests
-        self.blocked_queue = deque()    # FIFO queue of blocked requests
+        self.ready_queue = RequestQueue()
+        """ FIFO queue of waiting requests. """
+        self.blocked_queue = RequestQueue()
+        """ FIFO queue of blocked requests. """
         self.sch = Scheduler(self.callback)
         rospy.spin()
 
@@ -92,24 +93,25 @@ class FifoSchedulerNode(object):
     def dispatch(self):
         """ Grant any available resources to ready requests. """
         while len(self.ready_queue) > 0:
-            rq, requester_id = self.ready_queue.popleft()
-            resources = None
-            resources = self.pool.allocate(rq)
+            # Try to allocate oldest element in the ready queue.
+            elem = self.ready_queue.popleft()
+            resources = self.pool.allocate(elem.request)
             if not resources:           # oldest request cannot be satisfied?
                 # Return it to head of queue.
-                self.ready_queue.appendleft((rq, requester_id))
+                self.ready_queue.appendleft(elem)
                 return
             try:
-                rq.grant(resources)
-                rospy.loginfo('Request granted: ' + str(rq.get_uuid()))
+                elem.request.grant(resources)
+                rospy.loginfo(
+                    'Request granted: ' + str(elem.request.get_uuid()))
             except TransitionError:     # request no longer active?
                 # Return allocated resources to the pool.
                 self.pool.release_resources(resources)
             try:
-                self.sch.notify(requester_id)
+                self.sch.notify(elem.requester_id)
             except KeyError:            # requester now missing?
-                # Release request allocation.
-                self.pool.release_request(rq)
+                # Release requested allocation.
+                self.pool.release_request(elem.request)
 
     def free(self, request, requester_id):
         """ Free all resources allocated for this *request*.
@@ -145,7 +147,7 @@ class FifoSchedulerNode(object):
             request.wait(reason=Request.BUSY)
         except TransitionError:         # request no longer active?
             return
-        self.ready_queue.append((request, requester_id))
+        self.ready_queue.append(QueueElement(request, requester_id))
         rospy.loginfo('Request queued: ' + str(request.get_uuid()))
         self.dispatch()
 

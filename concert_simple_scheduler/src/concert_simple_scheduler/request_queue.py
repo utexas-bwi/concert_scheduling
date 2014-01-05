@@ -42,64 +42,62 @@ This module provides queue containers for scheduler requests for the
 """
 from collections import deque
 
-## ROS messages
-from rocon_scheduler_requests.transitions import ResourceReply
 
-
-class RequestQueueElement(object):
+class QueueElement(object):
     """ Request queue element class.
 
     :param request: Corresponding scheduler request object.
     :type request: :class:`.ResourceReply`
+    :param requester_id: Unique identifier of requester.
+    :type requester_id: :class:`uuid.UUID`
 
-    Different scheduling policies may want to provide a derived
-    subclass.
+    Different scheduling policies may provide derived subclasses.
     """
-    def __init__(self, request):
+    def __init__(self, request, requester_id):
         self.request = request
         """ Corresponding scheduler request object. """
+        self.requester_id = requester_id
+        """ :class:`uuid.UUID` of requester. """
 
 
 class RequestQueue(object):
-    """ This is a container class for a queue of requests to a ROCON_
-    scheduler.  Different scheduling policies may provide derived
-    subclasses.
+    """ This is a container class for a queue of tuples describing
+    ROCON_ scheduler requests.
 
-    :param iterable: Initial queued requests.
-    :type iterable: :class:`.ResourceReply` iterable
+    Different scheduling policies may provide derived subclasses.
+
+    :param iterable: Iterable yielding initial :class:`.QueueElement` objects.
 
     .. describe:: len(queue)
 
-       :returns: The number of requests in the *queue*.
+       :returns: The number of elements in the *queue*.
 
     """
     def __init__(self, iterable=[]):
-        self.queue = deque()
-        """ FIFO queue of :class:`.ResourceReply` objects. """
-        for request in iterable:
-            self.append(request)
+        self._queue = deque(iterable)
+        """ FIFO queue of :class:`.QueueElement`. """
 
     def __len__(self):
-        return len(self.queue)
+        return len(self._queue)
 
-    def append(self, request):
-        """ Add newest element. """
-        self.queue.append(RequestQueueElement(request))
+    def append(self, element):
+        """ Add *element* to tail of queue. """
+        self._queue.append(element)
 
-    def appendleft(self, request):
-        """ Add oldest element. """
-        self.queue.appendleft(RequestQueueElement(request))
+    def appendleft(self, element):
+        """ Add *element* to head of queue. """
+        self._queue.appendleft(element)
 
     def pop(self):
-        """ Remove newest element.
+        """ Remove element at queue tail.
 
         :raises: :exc:`IndexError` if queue was empty.
         """
-        return self.queue.pop().request
+        return self._queue.pop()
 
     def popleft(self):
-        """ Remove oldest element.
+        """ Remove element at queue head.
 
         :raises: :exc:`IndexError` if queue was empty.
         """
-        return self.queue.popleft().request
+        return self._queue.popleft()
