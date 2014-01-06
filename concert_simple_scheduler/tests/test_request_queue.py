@@ -56,10 +56,18 @@ class TestQueueElement(unittest.TestCase):
         qe1 = QueueElement(ROBERTO_REQUEST, RQR_ID)
         qe2 = QueueElement(MARVIN_REQUEST, RQR_ID)
         self.assertNotEqual(qe1, qe2)
+        self.assertTrue(qe1 != qe2)
         self.assertNotEqual(hash(qe1), hash(qe2))
         qe3 = QueueElement(ROBERTO_REQUEST, RQR_ID)
-        self.assertEqual(qe1, qe3)
+        self.assertEqual(qe1, qe3)      # same request ID
+        self.assertFalse(qe1 != qe3)
         self.assertEqual(hash(qe1), hash(qe3))
+        dict = {qe1: qe1}
+        self.assertIn(qe1, dict)
+        self.assertNotIn(qe2, dict)
+        self.assertIn(qe3, dict)        # because hashes are equal
+        dict[qe2] = qe2
+        self.assertIn(qe2, dict)
 
     def test_sort_diff_priority(self):
         qe1 = QueueElement(ResourceReply(

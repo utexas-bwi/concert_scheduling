@@ -68,6 +68,11 @@ class QueueElement(object):
        :returns: ``True`` if the *qe* and *other* have the same
            *request* ID (*not* their *requester_id* values).
 
+    .. describe:: qe != other
+
+       :returns: ``True`` if the *qe* and *other* do not have the same
+           *request* ID.
+
     Queue elements need to sort in the normal Python way, so they
     provide the required ``<`` operator.  The ``__cmp__`` method is
     not used, because Python 3 does not allow it.  **But**, we want
@@ -83,8 +88,9 @@ class QueueElement(object):
     
     This class does *not* provide a total ordering.  The ``==`` and
     ``<`` operators test completely different fields.  However, the
-    *request* identifiers are unique, so no two queue elements should
-    ever compare both equal and less.
+    *request* identifiers are unique, so no two valid queue elements
+    should ever compare both equal and less, although that situation
+    could be constructed artificially.
 
     """
     _sequence = 0
@@ -109,6 +115,9 @@ class QueueElement(object):
         return (self.request.msg.priority > other.request.msg.priority
                 or (self.request.msg.priority == other.request.msg.priority
                     and self.sequence < other.sequence))
+
+    def __ne__(self, other):
+        return self.request.msg.id != other.request.msg.id
 
 
 class RequestQueue(object):
