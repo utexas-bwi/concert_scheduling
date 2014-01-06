@@ -5,6 +5,7 @@
 from __future__ import absolute_import, print_function
 
 import copy
+import heapq
 import uuid
 import unittest
 
@@ -68,6 +69,48 @@ class TestQueueElement(unittest.TestCase):
         self.assertIn(qe3, dict)        # because hashes are equal
         dict[qe2] = qe2
         self.assertIn(qe2, dict)
+
+    def test_heap_queue(self):
+        qe1 = QueueElement(ResourceReply(
+                Request(id=unique_id.toMsg(RQ1_UUID),
+                        resources=[ROBERTO_RESOURCE],
+                        priority=10)
+                ), RQR_ID)
+        qe2 = QueueElement(ResourceReply(
+                Request(id=unique_id.toMsg(RQ1_UUID),
+                        resources=[MARVIN_RESOURCE],
+                        priority=0)
+                ), RQR_ID)
+        self.assertLess(qe1, qe2)       # due to higher priority
+        h = []
+        heapq.heappush(h, qe2)
+        heapq.heappush(h, qe1)
+        self.assertEqual(len(h), 2)
+        self.assertEqual(heapq.heappop(h), qe1)
+        self.assertEqual(len(h), 1)
+        heapq.heappush(h, qe1)
+        self.assertEqual(len(h), 2)
+        self.assertEqual(heapq.heappop(h), qe1)
+
+        qe3 = QueueElement(ResourceReply(
+                Request(id=unique_id.toMsg(RQ1_UUID),
+                        resources=[ROBERTO_RESOURCE])
+                ), RQR_ID)
+        qe4 = QueueElement(ResourceReply(
+                Request(id=unique_id.toMsg(RQ1_UUID),
+                        resources=[MARVIN_RESOURCE])
+                ), RQR_ID)
+        self.assertLess(qe3, qe4)       # due to sequence number
+        heapq.heappush(h, qe4)
+        heapq.heappush(h, qe3)
+        heapq.heappush(h, qe1)
+        self.assertEqual(len(h), 4)
+        self.assertEqual(heapq.heappop(h), qe1)
+        self.assertEqual(heapq.heappop(h), qe2)
+        self.assertEqual(heapq.heappop(h), qe3)
+        self.assertEqual(heapq.heappop(h), qe4)
+        self.assertEqual(len(h), 0)
+        self.assertRaises(IndexError, heapq.heappop, h)
 
     def test_sort_diff_priority(self):
         qe1 = QueueElement(ResourceReply(
