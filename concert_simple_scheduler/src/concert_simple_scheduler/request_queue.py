@@ -39,6 +39,7 @@ This module provides queue containers for scheduler requests for the
 .. include:: weblinks.rst
 
 """
+import copy
 import heapq
 import itertools
 
@@ -98,13 +99,17 @@ class QueueElement(object):
 
     def __init__(self, request, requester_id):
         self.request = request
-        """ Corresponding scheduler request object. """
+        """ Corresponding scheduler request :class:`ResourceReply` object. """
         self.requester_id = requester_id
         """ :class:`uuid.UUID` of requester. """
         self.sequence = next(self.__class__._sequence)
-        """ Unique sequence number of this element. """
+        """
+        Unique sequence number of this queue element.  All elements
+        created earlier have lower numbers, those created afterward
+        will be higher.
+        """
         self.active = True
-        """ ``True`` unless this request has been removed from its queue. """
+        """ ``True`` unless this element has been removed from its queue. """
 
     def __eq__(self, other):
         return self.request.msg.id == other.request.msg.id
@@ -148,11 +153,27 @@ class PriorityQueue(object):
     def __len__(self):
         return len(self._requests)
 
-    def add(self, element):
-        """ Add a new *element* to the queue. """
+    def add(self, element, priority=None):
+        """ Add a new *element* to the queue.
+
+        :param element: Queue *element* to add.
+        :type element: :class:`.QueueElement`
+        :param priority: (Optional) new priority for this *element*.
+        :type priority: int
+
+        If a request with the same identifier was already in the
+        queue, it is removed and replaced by the new *element*,
+        perhaps with a new *priority*.  That is the only safe way to
+        change the *priority* of an *element* that is already queued.
+        Changing it via some other name for that request will break
+        the queue implementation.
+        """
         if element in self._requests:   # already in the queue?
-            self.remove(element)        # mark that one inactive
+            self.remove(element)        # mark that copy inactive
+        element = copy.deepcopy(element)
         element.active = True
+        if priority is not None:
+            element.request.msg.priority = priority
         self._requests[element] = element
         heapq.heappush(self._queue, element)
 
@@ -172,6 +193,8 @@ class PriorityQueue(object):
     def remove(self, request_id):
         """ Remove element corresponding to *request_id*.
 
+        :param request_id: Identifier of the request to remove.
+        :type request_id: :class:`uuid.UUID` or :class:`.QueueElement`
         :raises: :exc:`KeyError` if *request_id* not in the queue.
         """
         # Remove it from the dictionary and mark it inactive, but
