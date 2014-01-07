@@ -49,7 +49,7 @@ from rocon_scheduler_requests import Scheduler, TransitionError
 from scheduler_msgs.msg import Request, Resource
 
 from .resource_pool import ResourcePool
-from .request_queue import QueueElement, RequestQueue
+from .request_queue import PriorityQueue, QueueElement
 
 
 class SimpleSchedulerNode(object):
@@ -64,10 +64,10 @@ class SimpleSchedulerNode(object):
         """ Constructor. """
         rospy.init_node(node_name)
         self.pool = ResourcePool()
-        self.ready_queue = RequestQueue()
-        """ FIFO queue of waiting requests. """
-        self.blocked_queue = RequestQueue()
-        """ FIFO queue of blocked requests. """
+        self.ready_queue = PriorityQueue()
+        """ Queue of waiting requests. """
+        self.blocked_queue = PriorityQueue()
+        """ Queue of blocked requests. """
         self.sch = Scheduler(self.callback)
         rospy.spin()
 
@@ -87,12 +87,12 @@ class SimpleSchedulerNode(object):
     def dispatch(self):
         """ Grant any available resources to ready requests. """
         while len(self.ready_queue) > 0:
-            # Try to allocate oldest element in the ready queue.
-            elem = self.ready_queue.popleft()
+            # Try to allocate top element in the ready queue.
+            elem = self.ready_queue.pop()
             resources = self.pool.allocate(elem.request)
-            if not resources:           # oldest request cannot be satisfied?
+            if not resources:           # top request cannot be satisfied?
                 # Return it to head of queue.
-                self.ready_queue.appendleft(elem)
+                self.ready_queue.add(elem)
                 return
             try:
                 elem.request.grant(resources)
@@ -142,7 +142,7 @@ class SimpleSchedulerNode(object):
             request.wait(reason=Request.BUSY)
         except TransitionError:         # request no longer active?
             return
-        self.ready_queue.append(QueueElement(request, requester_id))
+        self.ready_queue.add(QueueElement(request, requester_id))
         rospy.loginfo('Request queued: ' + str(request.get_uuid()))
         self.dispatch()
 

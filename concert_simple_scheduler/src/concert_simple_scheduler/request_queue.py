@@ -39,7 +39,6 @@ This module provides queue containers for scheduler requests for the
 .. include:: weblinks.rst
 
 """
-from collections import deque
 import heapq
 import itertools
 
@@ -120,50 +119,6 @@ class QueueElement(object):
 
     def __ne__(self, other):
         return self.request.msg.id != other.request.msg.id
-
-
-class RequestQueue(object):
-    """ This is a container class for ROCON_ scheduler request queue elements.
-
-    Elements are delivered in strict `first come, first served`_ order.
-
-    .. deprecated:: 0.0.1 use :class:`.PriorityQueue` instead.
-
-    :param iterable: Iterable yielding initial :class:`.QueueElement` objects.
-
-    .. describe:: len(queue)
-
-       :returns: The number of elements in the *queue*.
-
-    """
-    def __init__(self, iterable=[]):
-        self._queue = deque(iterable)
-        """ FIFO queue of :class:`.QueueElement`. """
-
-    def __len__(self):
-        return len(self._queue)
-
-    def append(self, element):
-        """ Add *element* to tail of queue. """
-        self._queue.append(element)
-
-    def appendleft(self, element):
-        """ Add *element* to head of queue. """
-        self._queue.appendleft(element)
-
-    def pop(self):
-        """ Remove element at queue tail.
-
-        :raises: :exc:`IndexError` if queue was empty.
-        """
-        return self._queue.pop()
-
-    def popleft(self):
-        """ Remove element at queue head.
-
-        :raises: :exc:`IndexError` if queue was empty.
-        """
-        return self._queue.popleft()
 
 
 class PriorityQueue(object):
