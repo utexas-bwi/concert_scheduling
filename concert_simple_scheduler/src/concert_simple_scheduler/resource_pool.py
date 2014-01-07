@@ -37,12 +37,7 @@ This module tracks all known resources managed by this scheduler.  The ROS
 `scheduler_msgs/Resource`_ message describes resources used by the
 `Robotics in Concert`_ (ROCON) project.
 
-.. _ROCON: http://www.robotconcert.org/wiki/Main_Page
-.. _`Robotics in Concert`: http://www.robotconcert.org/wiki/Main_Page
-.. _`scheduler_msgs/Resource`:
-    http://docs.ros.org/api/scheduler_msgs/html/msg/Resource.html
-.. _`scheduler_msgs/KnownResources`:
-    http://docs.ros.org/api/scheduler_msgs/html/msg/KnownResources.html
+.. include:: weblinks.rst
 
 """
 import copy
@@ -52,9 +47,9 @@ import unique_id
 ## ROS messages
 from scheduler_msgs.msg import Resource
 try:
-    from scheduler_msgs.msg import CurrentStatus, KnownResources
+    from scheduler_msgs.msg import CurrentStatus
 except ImportError:
-    from rocon_scheduler_requests.resources import CurrentStatus, KnownResources
+    from rocon_scheduler_requests.resources import CurrentStatus
 
 from rocon_scheduler_requests.resources import ResourceSet
 
@@ -162,7 +157,7 @@ class ResourcePool(object):
         return avail
 
     def release_request(self, request):
-        """ Release all the resources owned by this *request*. 
+        """ Release all the resources owned by this *request*.
 
         :param request: Current owner of resources to release.
         :type request: :class:`.ResourceReply`

@@ -12,9 +12,9 @@ import unittest
 import unique_id
 from scheduler_msgs.msg import Request, Resource
 try:
-    from scheduler_msgs.msg import CurrentStatus
+    from scheduler_msgs.msg import CurrentStatus, KnownResources
 except ImportError:
-    from rocon_scheduler_requests.resources import CurrentStatus
+    from rocon_scheduler_requests.resources import CurrentStatus, KnownResources
 from rocon_scheduler_requests.transitions import ResourceReply
 from rocon_scheduler_requests.resources import ResourceSet
 

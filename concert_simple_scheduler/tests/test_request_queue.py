@@ -199,6 +199,57 @@ class TestRequestQueue(unittest.TestCase):
         self.assertEqual(len(rqq2), 0)
         self.assertMultiLineEqual(str(rq2), str(ROBERTO_REQUEST))
 
+
+###############################
+# priority queue tests
+###############################
+
+
+class TestPriorityQueue(unittest.TestCase):
+    """Unit tests for simple scheduler FIFO request queue class.
+
+    These tests do not require a running ROS core.
+    """
+    def test_add_one_request(self):
+        pq1 = PriorityQueue()
+        self.assertEqual(len(pq1), 0)
+        pq1.add(QueueElement(ROBERTO_REQUEST, RQR_ID))
+        self.assertEqual(len(pq1), 1)
+
+    def test_empty_constructor(self):
+        pq0 = PriorityQueue()
+        self.assertIsNotNone(pq0)
+        self.assertEqual(len(pq0), 0)
+        self.assertRaises(IndexError, pq0.pop)
+
+    def test_one_request_constructor(self):
+        pq1 = PriorityQueue([QueueElement(ROBERTO_REQUEST, RQR_ID)])
+        self.assertEqual(len(pq1), 1)
+        rq1 = pq1.pop()
+        self.assertEqual(len(pq1), 0)
+        self.assertMultiLineEqual(str(rq1.request), str(ROBERTO_REQUEST))
+
+    def test_pop_one_request(self):
+        pq1 = PriorityQueue()
+        pq1.add(QueueElement(MARVIN_REQUEST, RQR_ID))
+        pq1.add(QueueElement(ROBERTO_REQUEST, RQR_ID))
+        self.assertEqual(len(pq1), 2)
+        self.assertMultiLineEqual(str(pq1.pop().request), str(MARVIN_REQUEST))
+
+    def test_two_request_constructor(self):
+        pq2 = PriorityQueue([
+                QueueElement(MARVIN_REQUEST, RQR_ID),
+                QueueElement(ROBERTO_REQUEST, RQR_ID)])
+        self.assertEqual(len(pq2), 2)
+
+        rq1 = pq2.pop()
+        self.assertEqual(len(pq2), 1)
+        self.assertMultiLineEqual(str(rq1.request), str(MARVIN_REQUEST))
+
+        rq2 = pq2.pop()
+        self.assertEqual(len(pq2), 0)
+        self.assertMultiLineEqual(str(rq2.request), str(ROBERTO_REQUEST))
+
 if __name__ == '__main__':
     import rosunit
     rosunit.unitrun('concert_simple_scheduler',
@@ -207,3 +258,6 @@ if __name__ == '__main__':
     rosunit.unitrun('concert_simple_scheduler',
                     'test_request_queue',
                     TestRequestQueue)
+    rosunit.unitrun('concert_simple_scheduler',
+                    'test_priority_queue',
+                    TestPriorityQueue)

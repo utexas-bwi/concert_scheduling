@@ -12,9 +12,12 @@ install(DIRECTORY scripts/
         USE_SOURCE_PERMISSIONS)
 
 # Lint Python modules
-file(GLOB_RECURSE ${PROJECT_NAME}_PY_SRCS 
+file(GLOB_RECURSE ${PROJECT_NAME}_PY_SCRIPTS
      RELATIVE ${PROJECT_SOURCE_DIR} scripts/*)
-roslint_python(${${PROJECT_NAME}_PY_SRCS})
+file(GLOB_RECURSE ${PROJECT_NAME}_PY_SRCS 
+     RELATIVE ${PROJECT_SOURCE_DIR} src/*.py)
+roslint_python(${${PROJECT_NAME}_PY_SCRIPTS}
+               ${${PROJECT_NAME}_PY_SRCS})
 
 ## Unit tests
 if (CATKIN_ENABLE_TESTING)

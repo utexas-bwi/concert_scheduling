@@ -39,13 +39,7 @@ This module implements the scheduler interface for the `Robotics in
 Concert`_ (ROCON) project.  It tracks resources and allocates them to
 ROCON services.
 
-Being a *simple* scheduler, this node allocates resources to requests
-on a `first come, first served`_ basis.
-
-.. _`first come, first served`:
-    http://en.wikipedia.org/wiki/First-come,_first-served
-.. _ROCON: http://www.robotconcert.org/wiki/Main_Page
-.. _`Robotics in Concert`: http://www.robotconcert.org/wiki/Main_Page
+.. include:: weblinks.rst
 
 """
 import rospy
@@ -58,15 +52,15 @@ from .resource_pool import ResourcePool
 from .request_queue import QueueElement, RequestQueue
 
 
-class FifoSchedulerNode(object):
-    """ First come, first served (FIFO) scheduler node.
+class SimpleSchedulerNode(object):
+    """ Simple scheduler node.
 
     :param node_name: (str) Default name of scheduler node.
 
     Derived versions of this class can implement different scheduling
     policies.
     """
-    def __init__(self, node_name='fifo_scheduler'):
+    def __init__(self, node_name='simple_scheduler'):
         """ Constructor. """
         rospy.init_node(node_name)
         self.pool = ResourcePool()
@@ -116,7 +110,7 @@ class FifoSchedulerNode(object):
     def free(self, request, requester_id):
         """ Free all resources allocated for this *request*.
 
-        :param request: (:class:`.RequestReply`) 
+        :param request: (:class:`.RequestReply`)
         :param requester_id: (:class:`uuid.UUID`) Unique requester identifier.
         """
         self.pool.release_request(request)
@@ -127,7 +121,7 @@ class FifoSchedulerNode(object):
     def queue_blocked(self, request, requester_id):
         """ Add request to blocked queue.
 
-        :param request: (:class:`.RequestReply`) 
+        :param request: (:class:`.RequestReply`)
         :param requester_id: (:class:`uuid.UUID`) Unique requester identifier.
         """
         try:
@@ -138,9 +132,10 @@ class FifoSchedulerNode(object):
         rospy.loginfo('Request blocked: ' + str(request.get_uuid()))
 
     def queue_ready(self, request, requester_id):
-        """ Add request to ready queue, making it wait. 
 
-        :param request: (:class:`.RequestReply`) 
+        """ Add request to ready queue, making it wait.
+
+        :param request: (:class:`.RequestReply`)
         :param requester_id: (:class:`uuid.UUID`) Unique requester identifier.
         """
         try:
@@ -154,4 +149,4 @@ class FifoSchedulerNode(object):
 
 def main():
     """ Scheduler node main entry point. """
-    node = FifoSchedulerNode()
+    node = SimpleSchedulerNode()
