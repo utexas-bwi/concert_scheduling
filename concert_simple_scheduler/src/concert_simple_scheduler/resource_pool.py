@@ -40,18 +40,74 @@ This module tracks all known resources managed by this scheduler.  The ROS
 .. include:: weblinks.rst
 
 """
+from __future__ import absolute_import, print_function, unicode_literals
+
 import copy
 from itertools import chain, islice, permutations
-import unique_id
+import re
 
 ## ROS messages
 from scheduler_msgs.msg import Resource
 try:
     from scheduler_msgs.msg import CurrentStatus
 except ImportError:
-    from rocon_scheduler_requests.resources import CurrentStatus
+    class CurrentStatus:
+        # provide a stub for the CurrentStatus message:
+        AVAILABLE, ALLOCATED, MISSING = range(3)
 
-from rocon_scheduler_requests.resources import ResourceSet
+        def __init__(self, platform_info='', rapps=[]):
+            self.platform_info = platform_info
+            self.rapps = rapps
+            self.status = CurrentStatus.AVAILABLE
+            self.owner = None
+try:
+    from scheduler_msgs.msg import KnownResources
+except ImportError:
+    class KnownResources:
+        # provide a stub for the KnownResources message:
+        def __init__(self, resources=[]):
+            self.resources = resources
+
+
+## Exceptions
+class ResourceNotAvailableError(Exception):
+    """ Error exception: resource not available. """
+    pass
+
+
+class ResourceNotOwnedError(Exception):
+    """ Error exception: resource not owned. """
+    pass
+
+
+def rocon_name(platform_info):
+    """ Generate canonical ROCON resource name.
+
+    :param platform_info: Platform info string from a
+        :class:`.PoolResource`, ``scheduler_msgs/Resource`` message,
+        or other resource representation.
+
+    :returns: (str) Canonical ROCON name for this resource.
+
+    A fully-resolved canonical name uniquely describes each resource
+    within a ROCON_ Concert.  Some requests may match multiple
+    resources by embedding regular expression syntax in the name.
+
+    If the *platform_info* is not already a ROCON name starting with
+    'rocon://', assume it may use the dotted syntax and convert shell
+    wildcard asterisks to the equivalent Python regular expression.
+
+    """
+    if platform_info[0:8] == 'rocon://':
+        return platform_info            # already canonical
+
+    # Assume dotted representation, convert that to canonical format.
+    retval = 'rocon://'
+    for part in platform_info.split('.'):
+        if part == '*':                 # shell wildcard syntax?
+            part = '\\.*'               # convert to Python RE
+        retval += '/' + part
+    return retval
 
 
 class ResourcePool(object):
@@ -207,3 +263,266 @@ class ResourcePool(object):
         for res in resources:
             pool_res = self.pool[res.platform_info]
             pool_res.release()
+
+
+class PoolResource:
+    """
+    Class for tracking the status of a single ROCON_ resource.
+
+    :param msg: ROCON scheduler resource message.
+    :type msg: scheduler_msgs/CurrentStatus or scheduler_msgs/Resource
+
+    .. describe:: hash(res)
+
+       :returns: Hash key for this resource.
+
+    .. describe:: res == other
+
+       :returns: ``True`` if this :class:`.PoolResource` equals the *other*.
+
+    .. describe:: res != other
+
+       :returns: ``True`` if this :class:`.PoolResource` differs from
+           the *other*.
+
+    .. describe:: str(res)
+
+       :returns: Human-readable string representation of this
+           :class:`.PoolResource`.
+
+    These attributes are also provided:
+
+    """
+    def __init__(self, msg):
+        """ Constructor. """
+        self.platform_info = rocon_name(msg.platform_info)
+        """ Fully-resolved canonical ROCON resource name. """
+        try:
+            self.rapps = set(msg.rapps)
+            """ The :class:`set` of ROCON application name strings
+            this platform advertises. """
+        except AttributeError:
+            self.rapps = set([msg.name])
+        self.owner = None
+        """ :class:`uuid.UUID` of request to which this resource is
+        currently assigned, or ``None``.
+        """
+        self.status = CurrentStatus.AVAILABLE
+        """ Current status of this resource. """
+
+    def __eq__(self, other):
+        if self.platform_info != other.platform_info:
+            return False
+        if self.rapps != other.rapps:
+            return False                # different rapps advertised
+        if self.owner != other.owner:
+            return False
+        if self.status != other.status:
+            return False
+        return True
+
+    def __hash__(self):
+        return hash(self.platform_info)
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __str__(self):
+        rappstr = ''
+        for rapp_name in self.rapps:
+            rappstr += '\n    ' + str(rapp_name)
+        return (self.platform_info + ', status: ' + str(self.status)
+                + '\n  owner: ' + str(self.owner)
+                + '\n  rapps:' + rappstr)
+
+    def allocate(self, request_id):
+        """ Allocate this resource.
+
+        :param request_id: New owner of this resource.
+        :type request_id: :class:`uuid.UUID`
+
+        :raises: :exc:`.ResourceNotAvailableError` if not available
+        """
+        if (self.status != CurrentStatus.AVAILABLE):
+            raise ResourceNotAvailableError('resource not available: '
+                                            + self.platform_info)
+        assert self.owner is None
+        self.owner = request_id
+        self.status = CurrentStatus.ALLOCATED
+
+    def match(self, res):
+        """ Match this resource to a requested one.
+
+        :param res: Resource request to match.
+        :type res: ``scheduler_msgs/Resource`` or :class:`.PoolResource`
+        :returns: ``True`` if this specific resource matches.
+
+        To match, the *res.name* must be one of the rapps advertised
+        by this ROCON resource.  The *res.platform_info* may include
+        Python regular expression syntax for matching multiple
+        resource names.
+
+        If the *res.platform_info* is not a canonical ROCON name
+        starting with 'rocon://', it will be converted from shell
+        wildcard syntax into an equivalent Python regular expression.
+
+        """
+        return self.match_pattern(rocon_name(res.platform_info), res.name)
+
+    def match_pattern(self, pattern, rapp):
+        """ Match this resource to a ROCON name and application.
+
+        :param pattern: Canonical ROCON name to match, maybe a regular
+            expression.
+        :type pattern: str
+        :param rapp: ROCON application name.
+        :type rapp: str
+        :returns: ``True`` if this specific resource matches.
+
+        The *rapp* must be one of those advertised by this ROCON
+        resource.  The *pattern* may include Python regular expression
+        syntax for matching multiple resource names.
+
+        """
+        if rapp not in self.rapps:      # rapp not advertised here?
+            return False
+        return re.match(pattern, self.platform_info)
+
+    def release(self, request_id=None):
+        """ Release this resource.
+
+        :param request_id: Optional owning request.
+        :type request_id: :class:`uuid.UUID` or ``None``
+
+        :raises: :exc:`.ResourceNotOwnedError` if *request_id* is
+            specified and is not the owner.
+        """
+        if (request_id is not None and self.owner != request_id):
+            raise ResourceNotOwnedError('resource not owned by '
+                                        + str(request_id) + ': '
+                                        + self.platform_info)
+        self.owner = None
+        if self.status == CurrentStatus.ALLOCATED:  # not gone missing?
+            self.status = CurrentStatus.AVAILABLE
+
+
+class ResourceSet:
+    """
+    This class is a container for :class:`.PoolResource` objects
+    known to the scheduler.  It acts like a dictionary.
+
+    *Deprecated*: use :class:`.ResourcePool`, instead.  Useful
+    attributes of this class will be merged, as needed.
+
+    :param msg: An optional ``scheduler_msgs/KnownResources`` or
+        ``scheduler_msgs/Request`` message or a list of
+        ``CurrentStatus`` or ``Resource`` messages, like the
+        ``resources`` component of one of those messages.
+
+    :class:`.ResourceSet` supports these standard container operations:
+
+    .. describe:: key in resources
+
+       :returns: ``True`` if *resources* contains *key*, else ``False``.
+
+    .. describe:: key not in resources
+
+       Equivalent to ``not key in resources``.
+
+    .. describe:: len(resources)
+
+       :returns: The number of resources in the set.
+
+    .. describe:: resources[key]
+
+       :param key: (str) A ROCON resource name.
+       :returns: The :class:`PoolResource` corresponding to *key*.
+       :raises: :exc:`KeyError` if no such *key*.
+
+    .. describe:: resources[key] = res
+
+       Assign a :class:`.PoolResource` to this *key*.
+
+       :param key: (str) A ROCON resource name.
+       :param res: Resource to add.
+       :type res: :class:`.PoolResource` or ``scheduler_msgs/Resource``
+
+    .. describe:: resources == another
+
+       :returns: ``True`` if this :class:`.ResourceSet` is equal to *another*.
+
+    .. describe:: resources != another
+
+       :returns: ``True`` if this :class:`.ResourceSet` and *another* have
+           different contents.
+
+    .. describe:: str(resources)
+
+       :returns: Human-readable string representation of this
+           :class:`.ResourceSet`.
+
+    These attributes are also provided:
+
+    """
+    def __init__(self, msg=None):
+        """ Constructor. """
+        self.resources = {}
+        """ Dictionary of known :class:`.PoolResource` objects. """
+        if msg is not None:
+            if hasattr(msg, 'resources'):
+                msg = msg.resources
+            for res in msg:
+                rocon_res = PoolResource(res)
+                self.resources[hash(rocon_res)] = rocon_res
+
+    def __contains__(self, res):
+        return hash(res) in self.resources
+
+    def __eq__(self, other):
+        if set(self.resources.keys()) != set(other.resources.keys()):
+            return False        # different resources hash IDs
+        for res_id, res in self.resources.items():
+            if res != other[res_id]:
+                return False
+        return True
+
+    def __getitem__(self, key):
+        """
+        :param key: Key of desired resource.
+
+        :returns: named item.
+        :raises: :exc:`KeyError` if no such request
+        """
+        return self.resources[hash(key)]
+
+    def __len__(self):
+        """ Number of resources. """
+        return len(self.resources)
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __setitem__(self, key, res):
+        """ Assign a :class:`.PoolResource` to this *key*. """
+        if not isinstance(res, PoolResource):
+            res = PoolResource(res)     # make a PoolResource instance
+        self.resources[hash(key)] = res
+
+    def __str__(self):
+        """ Format resource set into a human-readable string. """
+        res_str = ''
+        for res in self.resources.values():
+            res_str += '\n  ' + str(res)
+        return ('ROCON resource set:' + res_str)
+
+    def get(self, key, default=None):
+        """ Get resource, if known.
+
+        :param key: ROCON name of desired resource.
+        :type key: str
+        :param default: value to return if no such resource.
+
+        :returns: named :class:`.PoolResource` if successful, else *default*.
+
+        """
+        return self.resources.get(hash(key), default)

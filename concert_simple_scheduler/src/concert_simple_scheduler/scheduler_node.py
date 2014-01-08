@@ -44,9 +44,7 @@ ROCON services.
 """
 import rospy
 from rocon_scheduler_requests import Scheduler, TransitionError
-
-# ROS messages
-from scheduler_msgs.msg import Request, Resource
+from scheduler_msgs.msg import Request
 
 from .resource_pool import ResourcePool
 from .priority_queue import PriorityQueue, QueueElement
