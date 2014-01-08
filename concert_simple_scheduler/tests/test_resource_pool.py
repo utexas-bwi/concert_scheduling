@@ -67,13 +67,14 @@ class TestResourcePool(unittest.TestCase):
     def test_exact_resource_allocation(self):
         rp2 = ResourcePool(ResourceSet(DOUBLETON_POOL))
         res = copy.deepcopy(ROBERTO_RESOURCE)
-        subset = rp2.match_subset(res)
+        subset = rp2._match_subset(res)
         self.assertIn(ROBERTO_NAME, subset)
         self.assertEqual(subset, set([ROBERTO_NAME]))
-        self.assertEqual(rp2.match_list([ROBERTO_RESOURCE]),
+        self.assertEqual(rp2._match_list([ROBERTO_RESOURCE]),
                          [set([ROBERTO_NAME])])
         rq = copy.deepcopy(ROBERTO_REQUEST)
         alloc = rp2.allocate(rq)
+        self.assertTrue(alloc)
         self.assertEqual(alloc[0], ROBERTO_RESOURCE)
         self.assertEqual(rp2.pool[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
         self.assertEqual(rp2.pool[ROBERTO_NAME].owner, RQ_UUID)
@@ -83,14 +84,15 @@ class TestResourcePool(unittest.TestCase):
         res = Resource(
             name=TELEOP_RAPP,
             platform_info=ANY_NAME)
-        subset = rp2.match_subset(res)
+        subset = rp2._match_subset(res)
         self.assertNotIn(MARVIN_NAME, subset)
         self.assertIn(ROBERTO_NAME, subset)
         self.assertEqual(subset, set([ROBERTO_NAME]))
-        self.assertEqual(rp2.match_list([ROBERTO_RESOURCE]),
+        self.assertEqual(rp2._match_list([ROBERTO_RESOURCE]),
                          [set([ROBERTO_NAME])])
         rq = copy.deepcopy(ANY_REQUEST)
         alloc = rp2.allocate(rq)
+        self.assertTrue(alloc)
         self.assertEqual(alloc[0], ROBERTO_RESOURCE)
         self.assertEqual(rp2.pool[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
         self.assertEqual(rp2.pool[ROBERTO_NAME].owner, RQ_UUID)
@@ -100,14 +102,15 @@ class TestResourcePool(unittest.TestCase):
         res = Resource(
             name=TELEOP_RAPP,
             platform_info=ANY_NAME)
-        subset = rp2.match_subset(res)
+        subset = rp2._match_subset(res)
         self.assertIn(MARVIN_NAME, subset)
         self.assertIn(ROBERTO_NAME, subset)
         self.assertEqual(subset, set([MARVIN_NAME, ROBERTO_NAME]))
-        self.assertEqual(rp2.match_list([ROBERTO_RESOURCE]),
+        self.assertEqual(rp2._match_list([ROBERTO_RESOURCE]),
                          [set([ROBERTO_NAME])])
         rq = copy.deepcopy(ANY_REQUEST)
         alloc = rp2.allocate(rq)
+        self.assertTrue(alloc)
         if alloc[0] == MARVIN_RESOURCE:
             self.assertEqual(rp2.pool[MARVIN_NAME].status,
                              CurrentStatus.ALLOCATED)
@@ -133,6 +136,7 @@ class TestResourcePool(unittest.TestCase):
 
         rq = copy.deepcopy(ROBERTO_REQUEST)
         alloc = rp2.allocate(rq)
+        self.assertTrue(alloc)
         rq.grant(alloc)
         self.assertEqual(rp2.pool[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
         self.assertEqual(rp2.pool[ROBERTO_NAME].owner, RQ_UUID)
@@ -147,6 +151,7 @@ class TestResourcePool(unittest.TestCase):
 
         rq = copy.deepcopy(ROBERTO_REQUEST)
         alloc = rp2.allocate(rq)
+        self.assertTrue(alloc)
         self.assertEqual(rp2.pool[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
         self.assertEqual(rp2.pool[ROBERTO_NAME].owner, RQ_UUID)
 

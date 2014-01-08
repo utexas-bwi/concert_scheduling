@@ -86,7 +86,7 @@ class ResourcePool(object):
 
         # Make a list containing sets of the available resources
         # matching each requested item.
-        matches = self.match_list(request.msg.resources)
+        matches = self._match_list(request.msg.resources)
         if not matches:                 # unsuccessful?
             return []                   # give up
 
@@ -116,14 +116,11 @@ class ResourcePool(object):
 
         :param perm: List of permuted resource indices for this
             *request*, like [0, 1, 2] or [1, 2, 0].
-
         :param request: Scheduler request object, some resources may
             include regular expression syntax.
         :type request: :class:`.ResourceReply`
-
         :param matches: List containing sets of the available
             resources matching each element of *request.msg.resources*.
-
         :returns: List of ``scheduler_msgs/Resource`` messages
             allocated, in requested order with platform info fully
             resolved; or ``[]`` if not everything is available.
@@ -132,21 +129,28 @@ class ResourcePool(object):
         *request*.  Otherwise, the *request* remains unchanged.
 
         """
-        # Copy the full list of Resource messages.
+        # Copy the list of Resource messages and all their contents.
         alloc = copy.deepcopy(request.msg.resources)
 
-        # stub: pretend it's all successful
+        # Search in permutation order for some valid allocation.
+        names_allocated = set([])
+        for i in perm:
+            # try each matching name in order
+            for name in matches[i]:
+                if name not in names_allocated:  # still available?
+                    names_allocated.add(name)
+                    alloc[i].platform_info = name
+                    break               # go on to next resource
+            else:
+                return []               # failure: no matches work
 
         # successful: allocate to this request
         req_id = request.get_uuid()
-        for i in perm:
-            # pick the first matching name and allocate it
-            name = next(islice(matches[i], 1))
-            self.pool[name].allocate(req_id)
-            alloc[i].platform_info = name
-        return alloc
+        for resource in alloc:
+            self.pool[resource.platform_info].allocate(req_id)
+        return alloc                    # success
 
-    def match_list(self, resources):
+    def _match_list(self, resources):
         """
         Make a list containing sets of the available resources
         matching each element of *resources*.
@@ -158,24 +162,25 @@ class ResourcePool(object):
         """
         matches = []
         for res_req in resources:
-            match_set = self.match_subset(res_req)
+            match_set = self._match_subset(res_req)
             if len(match_set) == 0:     # no matches for this resource?
                 return []               # give up
             matches.append(match_set)
         return matches
 
-    def match_subset(self, resource_request):
-        """ Find all resources matching *resource_request*.
+    def _match_subset(self, resource_msg):
+        """
+        Make a set of names of all available resources matching *resource_msg*.
 
-        :param resource_request: Resource message from scheduler Request.
-        :type resource_request: ``scheduler_msgs/Resource``
+        :param resource_msg: Resource message from a scheduler Request.
+        :type resource_msg: ``scheduler_msgs/Resource``
 
         :returns: :class:`set` containing matching resource names.
         """
         avail = set()
         for res in self.pool.resources.values():
             if (res.status == CurrentStatus.AVAILABLE
-                    and res.match(resource_request)):
+                    and res.match(resource_msg)):
                 avail.add(res.platform_info)
         return avail
 
@@ -184,6 +189,8 @@ class ResourcePool(object):
 
         :param request: Current owner of resources to release.
         :type request: :class:`.ResourceReply`
+
+        Only appropriate when this *request* is being closed.
         """
         rq_id = request.get_uuid()
         for res in request.allocations:
@@ -196,7 +203,6 @@ class ResourcePool(object):
 
         This makes newly allocated *resources* available again when
         they cannot be assigned to a request for some reason.
-
         """
         for res in resources:
             pool_res = self.pool[res.platform_info]
