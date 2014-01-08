@@ -70,7 +70,7 @@ class ResourcePool(object):
     def allocate(self, request):
         """ Try to allocate all resources for a *request*.
 
-        :param request: Scheduler request message, some resources may
+        :param request: Scheduler request object, some resources may
             include regular expression syntax.
         :type request: :class:`.ResourceReply`
 
@@ -112,15 +112,38 @@ class ResourcePool(object):
         return []                       # failure
 
     def _allocate_permutation(self, perm, request, matches):
-        # stub implementation: copy fake results
+        """ Try to allocate some permutation of resources for a *request*.
+
+        :param perm: List of permuted resource indices for this
+            *request*, like [0, 1, 2] or [1, 2, 0].
+
+        :param request: Scheduler request object, some resources may
+            include regular expression syntax.
+        :type request: :class:`.ResourceReply`
+
+        :param matches: List containing sets of the available
+            resources matching each element of *request.msg.resources*.
+
+        :returns: List of ``scheduler_msgs/Resource`` messages
+            allocated, in requested order with platform info fully
+            resolved; or ``[]`` if not everything is available.
+
+        If successful, matching ROCON resources are allocated to this
+        *request*.  Otherwise, the *request* remains unchanged.
+
+        """
+        # Copy the full list of Resource messages.
         alloc = copy.deepcopy(request.msg.resources)
+
+        # stub: pretend it's all successful
 
         # successful: allocate to this request
         req_id = request.get_uuid()
         for i in perm:
-            name = matches[i].pop()     # pick some random match
-            matches[i].add(name)        # put it back in the set
+            # pick the first matching name and allocate it
+            name = next(islice(matches[i], 1))
             self.pool[name].allocate(req_id)
+            alloc[i].platform_info = name
         return alloc
 
     def match_list(self, resources):
