@@ -49,7 +49,7 @@ from rocon_scheduler_requests import Scheduler, TransitionError
 from scheduler_msgs.msg import Request, Resource
 
 from .resource_pool import ResourcePool
-from .request_queue import PriorityQueue, QueueElement
+from .priority_queue import PriorityQueue, QueueElement
 
 
 class SimpleSchedulerNode(object):

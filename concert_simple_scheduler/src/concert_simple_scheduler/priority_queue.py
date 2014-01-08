@@ -31,7 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-.. module:: request_queue
+.. module:: priority_queue
 
 This module provides queue containers for scheduler requests for the
 `Robotics in Concert`_ (ROCON) project.
@@ -42,6 +42,83 @@ This module provides queue containers for scheduler requests for the
 import copy
 import heapq
 import itertools
+
+
+class PriorityQueue(object):
+    """ This is a container class for ROCON_ scheduler request queue elements.
+
+    :param iterable: Iterable yielding initial contents, either
+        :class:`.QueueElement` objects, or something that behaves
+        similarly.
+
+    This implementation is based on the :py:mod:`heapq` module and
+    uses some of the ideas explained in its `priority queue
+    implementation notes`_.
+
+    .. describe:: len(queue)
+
+       :returns: The number of elements in the *queue*.
+
+    """
+    def __init__(self, iterable=[]):
+        self._queue = []
+        """ Priority queue of :class:`.QueueElement`. """
+        self._requests = {}
+        """ Dictionary of queued requests. """
+        for element in iterable:
+            self.add(element)
+
+    def __len__(self):
+        return len(self._requests)
+
+    def add(self, element, priority=None):
+        """ Add a new *element* to the queue.
+
+        :param element: Queue *element* to add.
+        :type element: :class:`.QueueElement`
+        :param priority: (Optional) new priority for this *element*.
+        :type priority: int
+
+        If a request with the same identifier was already in the
+        queue, it is removed and replaced by the new *element*,
+        perhaps with a new *priority*.  That is the only safe way to
+        change the *priority* of an *element* that is already queued.
+        Changing it via some other name for that request will break
+        the queue implementation.
+        """
+        if element in self._requests:   # already in the queue?
+            self.remove(element)        # mark that copy inactive
+        element = copy.deepcopy(element)
+        element.active = True
+        if priority is not None:
+            element.request.msg.priority = priority
+        self._requests[element] = element
+        heapq.heappush(self._queue, element)
+
+    def pop(self):
+        """ Remove the top-priority element from the queue head.
+
+        :raises: :exc:`IndexError` if queue was empty.
+        """
+        # Return the top element that was not previously removed.
+        while self._queue:
+            element = heapq.heappop(self._queue)
+            if element.active:          # not previously removed?
+                del self._requests[element]
+                return element
+        raise IndexError('pop from an empty priority queue')
+
+    def remove(self, request_id):
+        """ Remove element corresponding to *request_id*.
+
+        :param request_id: Identifier of the request to remove.
+        :type request_id: :class:`uuid.UUID` or :class:`.QueueElement`
+        :raises: :exc:`KeyError` if *request_id* not in the queue.
+        """
+        # Remove it from the dictionary and mark it inactive, but
+        # leave it in the queue to avoid re-sorting.
+        element = self._requests.pop(request_id)
+        element.active = False
 
 
 class QueueElement(object):
@@ -124,80 +201,3 @@ class QueueElement(object):
 
     def __ne__(self, other):
         return self.request.msg.id != other.request.msg.id
-
-
-class PriorityQueue(object):
-    """ This is a container class for ROCON_ scheduler request queue elements.
-
-    :param iterable: Iterable yielding initial contents, either
-        :class:`.QueueElement` objects, or something that behaves
-        similarly.
-
-    This implementation is based on the :py:mod:`heapq` module and
-    uses some of the ideas explained in its `priority queue
-    implementation notes`_.
-
-    .. describe:: len(queue)
-
-       :returns: The number of elements in the *queue*.
-
-    """
-    def __init__(self, iterable=[]):
-        self._queue = []
-        """ Priority queue of :class:`.QueueElement`. """
-        self._requests = {}
-        """ Dictionary of queued requests. """
-        for element in iterable:
-            self.add(element)
-
-    def __len__(self):
-        return len(self._requests)
-
-    def add(self, element, priority=None):
-        """ Add a new *element* to the queue.
-
-        :param element: Queue *element* to add.
-        :type element: :class:`.QueueElement`
-        :param priority: (Optional) new priority for this *element*.
-        :type priority: int
-
-        If a request with the same identifier was already in the
-        queue, it is removed and replaced by the new *element*,
-        perhaps with a new *priority*.  That is the only safe way to
-        change the *priority* of an *element* that is already queued.
-        Changing it via some other name for that request will break
-        the queue implementation.
-        """
-        if element in self._requests:   # already in the queue?
-            self.remove(element)        # mark that copy inactive
-        element = copy.deepcopy(element)
-        element.active = True
-        if priority is not None:
-            element.request.msg.priority = priority
-        self._requests[element] = element
-        heapq.heappush(self._queue, element)
-
-    def pop(self):
-        """ Remove the top-priority element from the queue head.
-
-        :raises: :exc:`IndexError` if queue was empty.
-        """
-        # Return the top element that was not previously removed.
-        while self._queue:
-            element = heapq.heappop(self._queue)
-            if element.active:          # not previously removed?
-                del self._requests[element]
-                return element
-        raise IndexError('pop from an empty priority queue')
-
-    def remove(self, request_id):
-        """ Remove element corresponding to *request_id*.
-
-        :param request_id: Identifier of the request to remove.
-        :type request_id: :class:`uuid.UUID` or :class:`.QueueElement`
-        :raises: :exc:`KeyError` if *request_id* not in the queue.
-        """
-        # Remove it from the dictionary and mark it inactive, but
-        # leave it in the queue to avoid re-sorting.
-        element = self._requests.pop(request_id)
-        element.active = False

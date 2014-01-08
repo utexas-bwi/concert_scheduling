@@ -15,7 +15,7 @@ from scheduler_msgs.msg import Request, Resource
 from rocon_scheduler_requests.transitions import ResourceReply
 
 # module being tested:
-from concert_simple_scheduler.request_queue import *
+from concert_simple_scheduler.priority_queue import *
 
 # some resources for testing
 RQR_ID = uuid.uuid4()

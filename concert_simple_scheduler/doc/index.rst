@@ -13,7 +13,7 @@ Contents:
    :maxdepth: 2
 
    scheduler_node
-   request_queue
+   priority_queue
    resource_pool
    CHANGELOG
 
