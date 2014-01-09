@@ -245,6 +245,16 @@ class ResourcePool(object):
             self.pool[resource.platform_info].allocate(req_id)
         return alloc                    # success
 
+    def get(self, resource_name, default=None):
+        """ Get named pool resource, if known.
+
+        :param resource_name: Name of desired resource.
+        :type resource_name: str
+        :param default: value to return if no such resource.
+        :returns: named :class:`.PoolResource` if successful, else *default*.
+        """
+        return self.pool.get(resource_name, default)
+
     def _match_list(self, resources):
         """
         Make a list containing sets of the available resources

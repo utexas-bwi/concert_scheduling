@@ -106,6 +106,13 @@ class TestResourcePool(unittest.TestCase):
         self.assertEqual(rp2[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
         self.assertEqual(rp2[ROBERTO_NAME].owner, RQ_UUID)
 
+    def test_get_method(self):
+        rp2 = ResourcePool(DOUBLETON_POOL)
+        self.assertEqual(rp2.get(ROBERTO_NAME), PoolResource(ROBERTO))
+        self.assertEqual(rp2.get(MARVIN_NAME, 3.14), PoolResource(MARVIN))
+        self.assertIsNone(rp2.get(ANY_NAME))
+        self.assertEqual(rp2.get(ANY_NAME, 3.14), 3.14)
+
     def test_matching_allocation_one_resource(self):
         rp1 = ResourcePool(SINGLETON_POOL)
         self.assertEqual(len(rp1), 1)
