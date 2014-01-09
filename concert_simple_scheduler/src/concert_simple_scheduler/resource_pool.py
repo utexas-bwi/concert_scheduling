@@ -126,6 +126,20 @@ class ResourcePool(object):
 
        :returns: The number of resources in the pool.
 
+    .. describe:: pool[name]
+
+       :param name: (str) The *name* of a resource in the *pool*.
+       :returns: The :class:`.PoolResource` corresponding to *name*.
+       :raises: :exc:`KeyError` if *name* not in the *pool*.
+
+    .. describe:: resource_name in pool
+
+       :returns: ``True`` if *pool* contains *resource_name*, else ``False``.
+
+    .. describe:: resource_name not in pool
+
+       Equivalent to ``not resource_name in pool``.
+
     """
     def __init__(self, msg=None):
         self.pool = {}
@@ -138,6 +152,12 @@ class ResourcePool(object):
             for res in msg:
                 pool_res = PoolResource(res)
                 self.pool[pool_res.platform_info] = pool_res
+
+    def __contains__(self, resource_name):
+        return resource_name in self.pool
+
+    def __getitem__(self, name):
+        return self.pool[name]
 
     def __len__(self):
         return len(self.pool)
