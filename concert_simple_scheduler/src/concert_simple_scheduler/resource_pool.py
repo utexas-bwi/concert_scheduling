@@ -33,8 +33,8 @@
 """
 .. module:: resource_pool
 
-This module tracks all known resources managed by this scheduler.  The ROS
-`scheduler_msgs/Resource`_ message describes resources used by the
+This module tracks all known resources managed by the scheduler.  The
+`scheduler_msgs/Resource`_ ROS message describes resources used by the
 `Robotics in Concert`_ (ROCON) project.
 
 .. include:: weblinks.rst
@@ -111,17 +111,36 @@ def rocon_name(platform_info):
 
 
 class ResourcePool(object):
-    """ This class tracks a pool of resources managed by this scheduler.
+    """ This class tracks a pool of resources managed by the scheduler.
 
-    :param resources: Initial resources for the pool.
-    :type resources: :class:`.ResourceSet` or ``None``
+    This class is a container for :class:`.PoolResource` objects known
+    to the scheduler.  It acts like a dictionary, using full-resolved
+    ROCON resource names as the key.
+
+    :param msg: An optional ``scheduler_msgs/KnownResources`` or
+        ``scheduler_msgs/Request`` message or a list of
+        ``CurrentStatus`` or ``Resource`` messages, like the
+        ``resources`` component of one of those messages.
+
+    :class:`.ResourcePool` supports these standard container operations:
+
+    .. describe:: len(pool)
+
+       :returns: The number of resources in the pool.
 
     """
-    def __init__(self, resources=None):
-        self.pool = resources
-        """ :class:`.ResourceSet` of current resource pool contents. """
-        if resources is None:
-            self.pool = ResourceSet()   # pool initially empty
+    def __init__(self, msg=None):
+        self.pool = {}
+        """ Dictionary of known :class:`.PoolResource` objects. """
+        if msg is not None:
+            if hasattr(msg, 'resources'):
+                msg = msg.resources
+            for res in msg:
+                pool_res = PoolResource(res)
+                self.pool[pool_res.platform_info] = pool_res
+
+    def __len__(self):
+        return len(self.pool)
 
     def allocate(self, request):
         """ Try to allocate all resources for a *request*.
@@ -234,7 +253,7 @@ class ResourcePool(object):
         :returns: :class:`set` containing matching resource names.
         """
         avail = set()
-        for res in self.pool.resources.values():
+        for res in self.pool.values():
             if (res.status == CurrentStatus.AVAILABLE
                     and res.match(resource_msg)):
                 avail.add(res.platform_info)
@@ -472,8 +491,8 @@ class ResourceSet:
             if hasattr(msg, 'resources'):
                 msg = msg.resources
             for res in msg:
-                rocon_res = PoolResource(res)
-                self.resources[hash(rocon_res)] = rocon_res
+                pool_res = PoolResource(res)
+                self.resources[hash(pool_res)] = pool_res
 
     def __contains__(self, res):
         return hash(res) in self.resources
