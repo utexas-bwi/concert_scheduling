@@ -111,11 +111,9 @@ def rocon_name(platform_info):
 
 
 class ResourcePool(object):
-    """ This class tracks a pool of resources managed by the scheduler.
-
-    This class is a container for :class:`.PoolResource` objects known
-    to the scheduler.  It acts like a dictionary, using full-resolved
-    ROCON resource names as the key.
+    """
+    This class manages a pool of :class:`.PoolResource` objects known
+    to the scheduler.
 
     :param msg: An optional ``scheduler_msgs/KnownResources`` or
         ``scheduler_msgs/Request`` message or a list of
@@ -131,7 +129,9 @@ class ResourcePool(object):
     """
     def __init__(self, msg=None):
         self.pool = {}
-        """ Dictionary of known :class:`.PoolResource` objects. """
+        """ Dictionary of known :class:`.PoolResource` objects,
+        indexed by the fully-resolved ROCON resource name.
+        """
         if msg is not None:
             if hasattr(msg, 'resources'):
                 msg = msg.resources
