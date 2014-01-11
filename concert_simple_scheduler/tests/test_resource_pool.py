@@ -15,7 +15,7 @@ try:
     from scheduler_msgs.msg import CurrentStatus, KnownResources
 except ImportError:
     from .resource_pool import CurrentStatus, KnownResources
-from rocon_scheduler_requests.transitions import ResourceReply
+from rocon_scheduler_requests.transitions import ActiveRequest
 
 # module being tested:
 from concert_simple_scheduler.resource_pool import *
@@ -64,12 +64,12 @@ DOUBLETON_POOL = KnownResources(resources=[MARVIN, ROBERTO])
 
 # some useful Resource and Request messages
 ANY_RESOURCE = Resource(name=TELEOP_RAPP, platform_info=ANY_NAME)
-ANY_REQUEST = ResourceReply(Request(
+ANY_REQUEST = ActiveRequest(Request(
     id=unique_id.toMsg(RQ_UUID),
     resources=[ANY_RESOURCE]))
 MARVIN_RESOURCE = Resource(name=TELEOP_RAPP, platform_info=MARVIN_NAME)
 ROBERTO_RESOURCE = Resource(name=TELEOP_RAPP, platform_info=ROBERTO_NAME)
-ROBERTO_REQUEST = ResourceReply(Request(
+ROBERTO_REQUEST = ActiveRequest(Request(
     id=unique_id.toMsg(RQ_UUID),
     resources=[ROBERTO_RESOURCE]))
 

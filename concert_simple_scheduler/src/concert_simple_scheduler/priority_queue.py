@@ -125,7 +125,7 @@ class QueueElement(object):
     """ Request queue element class.
 
     :param request: Corresponding scheduler request object.
-    :type request: :class:`.ResourceReply`
+    :type request: :class:`.ActiveRequest`
     :param requester_id: Unique identifier of requester.
     :type requester_id: :class:`uuid.UUID`
 
@@ -176,7 +176,7 @@ class QueueElement(object):
 
     def __init__(self, request, requester_id):
         self.request = request
-        """ Corresponding scheduler request :class:`ResourceReply` object. """
+        """ Corresponding scheduler request :class:`ActiveRequest` object. """
         self.requester_id = requester_id
         """ :class:`uuid.UUID` of requester. """
         self.sequence = next(self.__class__._sequence)

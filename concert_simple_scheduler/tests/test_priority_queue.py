@@ -12,7 +12,7 @@ import unittest
 # ROS dependencies
 import unique_id
 from scheduler_msgs.msg import Request, Resource
-from rocon_scheduler_requests.transitions import ResourceReply
+from rocon_scheduler_requests.transitions import ActiveRequest
 
 # module being tested:
 from concert_simple_scheduler.priority_queue import *
@@ -29,11 +29,11 @@ ROBERTO = Resource(platform_info=ROBERTO_NAME, name=EXAMPLE_RAPP)
 
 # some useful Resource and Request messages
 MARVIN_RESOURCE = Resource(name=EXAMPLE_RAPP, platform_info=MARVIN_NAME)
-MARVIN_REQUEST = ResourceReply(Request(
+MARVIN_REQUEST = ActiveRequest(Request(
     id=unique_id.toMsg(RQ1_UUID),
     resources=[MARVIN_RESOURCE]))
 ROBERTO_RESOURCE = Resource(name=EXAMPLE_RAPP, platform_info=ROBERTO_NAME)
-ROBERTO_REQUEST = ResourceReply(Request(
+ROBERTO_REQUEST = ActiveRequest(Request(
     id=unique_id.toMsg(RQ2_UUID),
     resources=[ROBERTO_RESOURCE]))
 
@@ -71,12 +71,12 @@ class TestQueueElement(unittest.TestCase):
         self.assertIn(qe2, dict)
 
     def test_heap_queue(self):
-        qe1 = QueueElement(ResourceReply(
+        qe1 = QueueElement(ActiveRequest(
                 Request(id=unique_id.toMsg(RQ1_UUID),
                         resources=[ROBERTO_RESOURCE],
                         priority=10)
                 ), RQR_ID)
-        qe2 = QueueElement(ResourceReply(
+        qe2 = QueueElement(ActiveRequest(
                 Request(id=unique_id.toMsg(RQ1_UUID),
                         resources=[MARVIN_RESOURCE],
                         priority=0)
@@ -92,11 +92,11 @@ class TestQueueElement(unittest.TestCase):
         self.assertEqual(len(h), 2)
         self.assertEqual(heapq.heappop(h), qe1)
 
-        qe3 = QueueElement(ResourceReply(
+        qe3 = QueueElement(ActiveRequest(
                 Request(id=unique_id.toMsg(RQ1_UUID),
                         resources=[ROBERTO_RESOURCE])
                 ), RQR_ID)
-        qe4 = QueueElement(ResourceReply(
+        qe4 = QueueElement(ActiveRequest(
                 Request(id=unique_id.toMsg(RQ1_UUID),
                         resources=[MARVIN_RESOURCE])
                 ), RQR_ID)
@@ -113,23 +113,23 @@ class TestQueueElement(unittest.TestCase):
         self.assertRaises(IndexError, heapq.heappop, h)
 
     def test_sort_diff_priority(self):
-        qe1 = QueueElement(ResourceReply(
+        qe1 = QueueElement(ActiveRequest(
                 Request(id=unique_id.toMsg(RQ1_UUID),
                         resources=[ROBERTO_RESOURCE],
                         priority=10)
                 ), RQR_ID)
-        qe2 = QueueElement(ResourceReply(
+        qe2 = QueueElement(ActiveRequest(
                 Request(id=unique_id.toMsg(RQ1_UUID),
                         resources=[MARVIN_RESOURCE],
                         priority=0)
                 ), RQR_ID)
         self.assertLess(qe1, qe2)
         self.assertEqual(sorted([qe2, qe1]), [qe1, qe2])
-        qe3 = QueueElement(ResourceReply(
+        qe3 = QueueElement(ActiveRequest(
                 Request(id=unique_id.toMsg(RQ1_UUID),
                         resources=[ROBERTO_RESOURCE])
                 ), RQR_ID)
-        qe4 = QueueElement(ResourceReply(
+        qe4 = QueueElement(ActiveRequest(
                 Request(id=unique_id.toMsg(RQ1_UUID),
                         resources=[MARVIN_RESOURCE])
                 ), RQR_ID)

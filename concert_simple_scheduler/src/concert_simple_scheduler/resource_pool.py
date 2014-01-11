@@ -167,7 +167,7 @@ class ResourcePool(object):
 
         :param request: Scheduler request object, some resources may
             include regular expression syntax.
-        :type request: :class:`.ResourceReply`
+        :type request: :class:`.ActiveRequest`
 
         :returns: List of ``scheduler_msgs/Resource`` messages
             allocated, in requested order with platform info fully
@@ -213,7 +213,7 @@ class ResourcePool(object):
             *request*, like [0, 1, 2] or [1, 2, 0].
         :param request: Scheduler request object, some resources may
             include regular expression syntax.
-        :type request: :class:`.ResourceReply`
+        :type request: :class:`.ActiveRequest`
         :param matches: List containing sets of the available
             resources matching each element of *request.msg.resources*.
         :returns: List of ``scheduler_msgs/Resource`` messages
@@ -293,7 +293,7 @@ class ResourcePool(object):
         """ Release all the resources owned by this *request*.
 
         :param request: Current owner of resources to release.
-        :type request: :class:`.ResourceReply`
+        :type request: :class:`.ActiveRequest`
 
         Only appropriate when this *request* is being closed.
         """
