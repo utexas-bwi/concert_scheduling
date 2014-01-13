@@ -54,6 +54,7 @@ TEST_ANOTHER_STRING = (
     """ + EXAMPLE_RAPP)
 
 ANY_NAME = 'rocon:///linux/precise/ros/turtlebot/\.*'
+NOT_TURTLEBOT_NAME = 'rocon:///linux/precise/ros/pr2/farnsworth'
 MARVIN_NAME = 'rocon:///linux/precise/ros/turtlebot/marvin'
 ROBERTO_NAME = 'rocon:///linux/precise/ros/turtlebot/roberto'
 MARVIN = CurrentStatus(platform_info=MARVIN_NAME, rapps=TEST_RAPPS)
@@ -72,6 +73,12 @@ ROBERTO_RESOURCE = Resource(name=TELEOP_RAPP, platform_info=ROBERTO_NAME)
 ROBERTO_REQUEST = ActiveRequest(Request(
     id=unique_id.toMsg(RQ_UUID),
     resources=[ROBERTO_RESOURCE]))
+NOT_TURTLEBOT_RESOURCE = Resource(
+    name=TELEOP_RAPP,
+    platform_info=NOT_TURTLEBOT_NAME)
+NOT_TURTLEBOT_REQUEST = ActiveRequest(Request(
+    id=unique_id.toMsg(RQ_UUID),
+    resources=[NOT_TURTLEBOT_RESOURCE]))
 
 
 class TestResourcePool(unittest.TestCase):
@@ -81,7 +88,7 @@ class TestResourcePool(unittest.TestCase):
     """
 
     ####################
-    # ROCON resource pool tests
+    # resource pool tests
     ####################
 
     def test_empty_constructor(self):
@@ -112,6 +119,23 @@ class TestResourcePool(unittest.TestCase):
         self.assertEqual(rp2.get(MARVIN_NAME, 3.14), PoolResource(MARVIN))
         self.assertIsNone(rp2.get(ANY_NAME))
         self.assertEqual(rp2.get(ANY_NAME, 3.14), 3.14)
+
+    def test_match_failures(self):
+        rp1 = ResourcePool(SINGLETON_POOL)
+        res = Resource(
+            name=TELEOP_RAPP,
+            platform_info=NOT_TURTLEBOT_NAME)
+        subset = rp1._match_subset(res)
+        self.assertEqual(len(subset), 0)
+        self.assertNotIn(MARVIN_NAME, subset)
+        self.assertNotIn(ROBERTO_NAME, subset)
+        self.assertEqual(subset, set())
+        matches = rp1._match_list([NOT_TURTLEBOT_RESOURCE])
+        self.assertEqual(matches, [])
+        self.assertFalse(matches)
+        rq = copy.deepcopy(NOT_TURTLEBOT_REQUEST)
+        alloc = rp1.allocate(rq)
+        self.assertFalse(alloc)
 
     def test_matching_allocation_one_resource(self):
         rp1 = ResourcePool(SINGLETON_POOL)
