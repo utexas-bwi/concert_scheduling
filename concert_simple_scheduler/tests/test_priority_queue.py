@@ -158,11 +158,20 @@ class TestPriorityQueue(unittest.TestCase):
 
     These tests do not require a running ROS core.
     """
+    def test_add_duplicate_request(self):
+        pq = PriorityQueue()
+        self.assertEqual(len(pq), 0)
+        pq.add(QueueElement(ROBERTO_REQUEST, RQR_ID))
+        self.assertEqual(len(pq), 1)
+        dup = copy.deepcopy(ROBERTO_REQUEST)
+        pq.add(QueueElement(dup, RQR_ID))
+        self.assertEqual(len(pq), 1)
+
     def test_add_one_request(self):
-        pq1 = PriorityQueue()
-        self.assertEqual(len(pq1), 0)
-        pq1.add(QueueElement(ROBERTO_REQUEST, RQR_ID))
-        self.assertEqual(len(pq1), 1)
+        pq = PriorityQueue()
+        self.assertEqual(len(pq), 0)
+        pq.add(QueueElement(ROBERTO_REQUEST, RQR_ID))
+        self.assertEqual(len(pq), 1)
 
     def test_empty_constructor(self):
         pq0 = PriorityQueue()
@@ -171,18 +180,41 @@ class TestPriorityQueue(unittest.TestCase):
         self.assertRaises(IndexError, pq0.pop)
 
     def test_one_request_constructor(self):
-        pq1 = PriorityQueue([QueueElement(ROBERTO_REQUEST, RQR_ID)])
-        self.assertEqual(len(pq1), 1)
-        rq1 = pq1.pop()
-        self.assertEqual(len(pq1), 0)
+        pq = PriorityQueue([QueueElement(ROBERTO_REQUEST, RQR_ID)])
+        self.assertEqual(len(pq), 1)
+        rq1 = pq.pop()
+        self.assertEqual(len(pq), 0)
         self.assertMultiLineEqual(str(rq1.request), str(ROBERTO_REQUEST))
 
     def test_pop_one_request(self):
-        pq1 = PriorityQueue()
-        pq1.add(QueueElement(MARVIN_REQUEST, RQR_ID))
-        pq1.add(QueueElement(ROBERTO_REQUEST, RQR_ID))
-        self.assertEqual(len(pq1), 2)
-        self.assertMultiLineEqual(str(pq1.pop().request), str(MARVIN_REQUEST))
+        pq = PriorityQueue()
+        pq.add(QueueElement(MARVIN_REQUEST, RQR_ID))
+        pq.add(QueueElement(ROBERTO_REQUEST, RQR_ID))
+        self.assertEqual(len(pq), 2)
+        self.assertMultiLineEqual(str(pq.pop().request), str(MARVIN_REQUEST))
+
+    def test_priority_update(self):
+        pq = PriorityQueue()
+        pq.add(QueueElement(MARVIN_REQUEST, RQR_ID))
+        pq.add(QueueElement(ROBERTO_REQUEST, RQR_ID))
+        self.assertEqual(len(pq), 2)
+        pq.add(QueueElement(ROBERTO_REQUEST, RQR_ID), priority=10)
+        self.assertEqual(len(pq), 2)
+        qe = pq.pop()
+        self.assertEqual(len(pq), 1)
+        self.assertEqual(qe.request.get_uuid(), RQ2_UUID)
+        self.assertEqual(qe.request.msg.priority, 10)
+        self.assertEqual(qe.request.msg.resources[0].platform_info,
+                         ROBERTO_NAME)
+
+    def test_remove_one_request(self):
+        pq = PriorityQueue()
+        pq.add(QueueElement(MARVIN_REQUEST, RQR_ID))
+        pq.add(QueueElement(ROBERTO_REQUEST, RQR_ID))
+        self.assertEqual(len(pq), 2)
+        pq.remove(RQ1_UUID)
+        self.assertEqual(len(pq), 1)
+        self.assertMultiLineEqual(str(pq.pop().request), str(ROBERTO_REQUEST))
 
     def test_two_request_constructor(self):
         pq2 = PriorityQueue([

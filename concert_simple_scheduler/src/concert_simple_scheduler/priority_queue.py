@@ -86,13 +86,13 @@ class PriorityQueue(object):
         Changing it via some other name for that request will break
         the queue implementation.
         """
-        if element in self._requests:   # already in the queue?
+        if hash(element) in self._requests:  # already in the queue?
             self.remove(element)        # mark that copy inactive
         element = copy.deepcopy(element)
         element.active = True
         if priority is not None:
             element.request.msg.priority = priority
-        self._requests[element] = element
+        self._requests[hash(element)] = element
         heapq.heappush(self._queue, element)
 
     def pop(self):
@@ -104,7 +104,7 @@ class PriorityQueue(object):
         while self._queue:
             element = heapq.heappop(self._queue)
             if element.active:          # not previously removed?
-                del self._requests[element]
+                del self._requests[hash(element)]
                 return element
         raise IndexError('pop from an empty priority queue')
 
@@ -117,7 +117,7 @@ class PriorityQueue(object):
         """
         # Remove it from the dictionary and mark it inactive, but
         # leave it in the queue to avoid re-sorting.
-        element = self._requests.pop(request_id)
+        element = self._requests.pop(hash(request_id))
         element.active = False
 
 
