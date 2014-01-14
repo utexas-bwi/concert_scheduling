@@ -91,6 +91,34 @@ class TestResourcePool(unittest.TestCase):
     # resource pool tests
     ####################
 
+    def test_allocate_permutation_two_resources(self):
+        # Request a regexp allocation followed by an exact allocation.
+        # Initially the exact resource gets assigned to the regexp, so
+        # the second part of the request fails.  The allocator must
+        # try the other permutation for it to succeed.
+        pool = ResourcePool(KnownResources(resources=[
+                    CurrentStatus(platform_info=MARVIN_NAME,
+                                  rapps={TELEOP_RAPP, EXAMPLE_RAPP}),
+                    CurrentStatus(platform_info=ROBERTO_NAME,
+                                  rapps={TELEOP_RAPP})]))
+        rq = ActiveRequest(Request(
+                id=unique_id.toMsg(RQ_UUID),
+                resources=[Resource(name=TELEOP_RAPP,
+                                    platform_info=ANY_NAME),
+                           Resource(name=EXAMPLE_RAPP,
+                                    platform_info=MARVIN_NAME)]))
+        alloc = pool.allocate(rq)
+        self.assertTrue(alloc)
+        self.assertEqual(len(alloc), 2)
+        self.assertEqual(pool[MARVIN_NAME].status, CurrentStatus.ALLOCATED)
+        self.assertEqual(pool[MARVIN_NAME].owner, RQ_UUID)
+        self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
+        self.assertEqual(pool[ROBERTO_NAME].owner, RQ_UUID)
+        self.assertEqual(alloc[0], Resource(name=TELEOP_RAPP,
+                                            platform_info=ROBERTO_NAME))
+        self.assertEqual(alloc[1], Resource(name=EXAMPLE_RAPP,
+                                            platform_info=MARVIN_NAME))
+
     def test_empty_constructor(self):
         rp0 = ResourcePool()
         self.assertIsNotNone(rp0)
@@ -119,6 +147,17 @@ class TestResourcePool(unittest.TestCase):
         self.assertEqual(rp2.get(MARVIN_NAME, 3.14), PoolResource(MARVIN))
         self.assertIsNone(rp2.get(ANY_NAME))
         self.assertEqual(rp2.get(ANY_NAME, 3.14), 3.14)
+
+    def test_insufficient_resources(self):
+        # ask for two when there's only one
+        pool = ResourcePool(KnownResources(resources=[ROBERTO]))
+        rq1 = ActiveRequest(Request(
+                id=unique_id.toMsg(RQ_UUID),
+                resources=[ANY_RESOURCE, ANY_RESOURCE]))
+        alloc1 = pool.allocate(rq1)
+        self.assertFalse(alloc1)
+        self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.AVAILABLE)
+        self.assertIsNone(pool[ROBERTO_NAME].owner)
 
     def test_match_failures(self):
         rp1 = ResourcePool(SINGLETON_POOL)

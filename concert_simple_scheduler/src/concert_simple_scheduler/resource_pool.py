@@ -189,21 +189,21 @@ class ResourcePool(object):
         # matches set as the number requested.
         match_union = set(chain.from_iterable(matches))
         if len(match_union) < n_wanted:
-            return []                   # not enough stuff  (test_gap)
+            return []                   # not enough stuff
 
         # At least one resource is available that satisfies each item
         # requested.  Try to allocate them all in the order requested.
         alloc = self._allocate_permutation(range(n_wanted), request, matches)
         if alloc:                       # successful?
             return alloc
-        if n_wanted > 3:                # lots of permutations?  (test_gap)
+        if n_wanted > 3:                # lots of permutations?
             return []                   # give up  (test_gap)
 
         # Look for some other permutation that satisfies them all.
         for perm in islice(permutations(range(n_wanted)), 1, None):
             alloc = self._allocate_permutation(perm, request, matches)
             if alloc:                   # successful?
-                return alloc            #   (test_gap)
+                return alloc
         return []                       # failure  (test_gap)
 
     def _allocate_permutation(self, perm, request, matches):
@@ -237,7 +237,7 @@ class ResourcePool(object):
                     alloc[i].platform_info = name
                     break               # go on to next resource
             else:
-                return []               # failure: no matches work  (test_gap)
+                return []               # failure: no matches work
 
         # successful: allocate to this request
         req_id = request.get_uuid()
