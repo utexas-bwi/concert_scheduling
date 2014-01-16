@@ -196,14 +196,13 @@ class ResourcePool(object):
         alloc = self._allocate_permutation(range(n_wanted), request, matches)
         if alloc:                       # successful?
             return alloc
-        if n_wanted > 3:                # lots of permutations?
-            return []                   # give up  (test_gap)
 
-        # Look for some other permutation that satisfies them all.
-        for perm in islice(permutations(range(n_wanted)), 1, None):
-            alloc = self._allocate_permutation(perm, request, matches)
-            if alloc:                   # successful?
-                return alloc
+        if n_wanted < 4:                # not too many permutations?
+            # Look for some other permutation that satisfies them all.
+            for perm in islice(permutations(range(n_wanted)), 1, None):
+                alloc = self._allocate_permutation(perm, request, matches)
+                if alloc:               # successful?
+                    return alloc
         return []                       # failure  (test_gap)
 
     def _allocate_permutation(self, perm, request, matches):

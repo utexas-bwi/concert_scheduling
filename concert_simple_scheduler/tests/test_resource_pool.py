@@ -55,6 +55,10 @@ TEST_ANOTHER_STRING = (
 
 ANY_NAME = 'rocon:///linux/precise/ros/turtlebot/\.*'
 NOT_TURTLEBOT_NAME = 'rocon:///linux/precise/ros/pr2/farnsworth'
+DUDE1_NAME = 'rocon:///linux/precise/ros/turtlebot/dude1'
+DUDE2_NAME = 'rocon:///linux/precise/ros/turtlebot/dude2'
+DUDE3_NAME = 'rocon:///linux/precise/ros/turtlebot/dude3'
+DUDE4_NAME = 'rocon:///linux/precise/ros/turtlebot/dude4'
 MARVIN_NAME = 'rocon:///linux/precise/ros/turtlebot/marvin'
 ROBERTO_NAME = 'rocon:///linux/precise/ros/turtlebot/roberto'
 MARVIN = CurrentStatus(platform_info=MARVIN_NAME, rapps=TEST_RAPPS)
@@ -91,11 +95,72 @@ class TestResourcePool(unittest.TestCase):
     # resource pool tests
     ####################
 
+    def test_allocate_four_resources_failure(self):
+        """ Similar to test_allocate_permutation_two_resources(), but
+        here there are more permutations, so the allocator gives up
+        after the initial failure.
+        """
+        pool = ResourcePool(KnownResources(resources=[
+                    CurrentStatus(platform_info=DUDE1_NAME,
+                                  rapps={TELEOP_RAPP, EXAMPLE_RAPP}),
+                    CurrentStatus(platform_info=DUDE2_NAME,
+                                  rapps={TELEOP_RAPP}),
+                    CurrentStatus(platform_info=DUDE3_NAME,
+                                  rapps={TELEOP_RAPP}),
+                    CurrentStatus(platform_info=DUDE4_NAME,
+                                  rapps={TELEOP_RAPP})]))
+        rq = ActiveRequest(Request(
+                id=unique_id.toMsg(RQ_UUID),
+                resources=[Resource(name=TELEOP_RAPP,
+                                    platform_info=ANY_NAME),
+                           Resource(name=EXAMPLE_RAPP,
+                                    platform_info=DUDE4_NAME),
+                           Resource(name=TELEOP_RAPP,
+                                    platform_info=DUDE2_NAME),
+                           Resource(name=TELEOP_RAPP,
+                                    platform_info=DUDE3_NAME)]))
+        alloc = pool.allocate(rq)
+        self.assertFalse(alloc)
+        for name in [DUDE1_NAME, DUDE2_NAME, DUDE3_NAME, DUDE4_NAME]:
+            self.assertEqual(pool[name].status, CurrentStatus.AVAILABLE)
+            self.assertIsNone(pool[name].owner)
+
+    def test_allocate_four_resources_success(self):
+        """ Similar to test_allocate_four_resources_failure(), but the
+        order of the request is different, so the allocator succeeds.
+        """
+        pool = ResourcePool(KnownResources(resources=[
+                    CurrentStatus(platform_info=DUDE1_NAME,
+                                  rapps={TELEOP_RAPP, EXAMPLE_RAPP}),
+                    CurrentStatus(platform_info=DUDE2_NAME,
+                                  rapps={TELEOP_RAPP}),
+                    CurrentStatus(platform_info=DUDE3_NAME,
+                                  rapps={TELEOP_RAPP}),
+                    CurrentStatus(platform_info=DUDE4_NAME,
+                                  rapps={TELEOP_RAPP})]))
+        rq = ActiveRequest(Request(
+                id=unique_id.toMsg(RQ_UUID),
+                resources=[Resource(name=EXAMPLE_RAPP,
+                                    platform_info=DUDE1_NAME),
+                           Resource(name=TELEOP_RAPP,
+                                    platform_info=DUDE2_NAME),
+                           Resource(name=TELEOP_RAPP,
+                                    platform_info=DUDE3_NAME),
+                           Resource(name=TELEOP_RAPP,
+                                    platform_info=ANY_NAME)]))
+        alloc = pool.allocate(rq)
+        self.assertTrue(alloc)
+        bot_names = [DUDE1_NAME, DUDE2_NAME, DUDE3_NAME, DUDE4_NAME]
+        for name, i in zip(bot_names, range(4)):
+            self.assertEqual(pool[name].status, CurrentStatus.ALLOCATED)
+            self.assertEqual(alloc[i].platform_info, name)
+
     def test_allocate_permutation_two_resources(self):
-        # Request a regexp allocation followed by an exact allocation.
-        # Initially the exact resource gets assigned to the regexp, so
-        # the second part of the request fails.  The allocator must
-        # try the other permutation for it to succeed.
+        """ Request a regexp allocation followed by an exact
+        allocation.  Initially the exact resource gets assigned to the
+        regexp, so the second part of the request fails.  The
+        allocator must try the other permutation for it to succeed.
+        """
         pool = ResourcePool(KnownResources(resources=[
                     CurrentStatus(platform_info=MARVIN_NAME,
                                   rapps={TELEOP_RAPP, EXAMPLE_RAPP}),
