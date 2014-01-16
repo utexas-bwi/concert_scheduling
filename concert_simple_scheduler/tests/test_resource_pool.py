@@ -102,13 +102,13 @@ class TestResourcePool(unittest.TestCase):
         """
         pool = ResourcePool(KnownResources(resources=[
                     CurrentStatus(platform_info=DUDE1_NAME,
-                                  rapps={TELEOP_RAPP, EXAMPLE_RAPP}),
+                                  rapps={TELEOP_RAPP}),
                     CurrentStatus(platform_info=DUDE2_NAME,
                                   rapps={TELEOP_RAPP}),
                     CurrentStatus(platform_info=DUDE3_NAME,
                                   rapps={TELEOP_RAPP}),
                     CurrentStatus(platform_info=DUDE4_NAME,
-                                  rapps={TELEOP_RAPP})]))
+                                  rapps={TELEOP_RAPP, EXAMPLE_RAPP})]))
         rq = ActiveRequest(Request(
                 id=unique_id.toMsg(RQ_UUID),
                 resources=[Resource(name=TELEOP_RAPP,
@@ -131,17 +131,17 @@ class TestResourcePool(unittest.TestCase):
         """
         pool = ResourcePool(KnownResources(resources=[
                     CurrentStatus(platform_info=DUDE1_NAME,
-                                  rapps={TELEOP_RAPP, EXAMPLE_RAPP}),
+                                  rapps={TELEOP_RAPP}),
                     CurrentStatus(platform_info=DUDE2_NAME,
                                   rapps={TELEOP_RAPP}),
                     CurrentStatus(platform_info=DUDE3_NAME,
                                   rapps={TELEOP_RAPP}),
                     CurrentStatus(platform_info=DUDE4_NAME,
-                                  rapps={TELEOP_RAPP})]))
+                                  rapps={TELEOP_RAPP, EXAMPLE_RAPP})]))
         rq = ActiveRequest(Request(
                 id=unique_id.toMsg(RQ_UUID),
                 resources=[Resource(name=EXAMPLE_RAPP,
-                                    platform_info=DUDE1_NAME),
+                                    platform_info=DUDE4_NAME),
                            Resource(name=TELEOP_RAPP,
                                     platform_info=DUDE2_NAME),
                            Resource(name=TELEOP_RAPP,
@@ -150,7 +150,7 @@ class TestResourcePool(unittest.TestCase):
                                     platform_info=ANY_NAME)]))
         alloc = pool.allocate(rq)
         self.assertTrue(alloc)
-        bot_names = [DUDE1_NAME, DUDE2_NAME, DUDE3_NAME, DUDE4_NAME]
+        bot_names = [DUDE4_NAME, DUDE2_NAME, DUDE3_NAME, DUDE1_NAME]
         for name, i in zip(bot_names, range(4)):
             self.assertEqual(pool[name].status, CurrentStatus.ALLOCATED)
             self.assertEqual(alloc[i].platform_info, name)

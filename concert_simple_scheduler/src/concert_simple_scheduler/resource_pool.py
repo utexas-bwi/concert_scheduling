@@ -203,7 +203,7 @@ class ResourcePool(object):
                 alloc = self._allocate_permutation(perm, request, matches)
                 if alloc:               # successful?
                     return alloc
-        return []                       # failure  (test_gap)
+        return []                       # failure
 
     def _allocate_permutation(self, perm, request, matches):
         """ Try to allocate some permutation of resources for a *request*.
