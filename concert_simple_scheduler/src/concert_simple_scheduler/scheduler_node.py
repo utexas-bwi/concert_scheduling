@@ -42,7 +42,6 @@ ROCON services.
 .. include:: weblinks.rst
 
 """
-import threading
 import rospy
 from rocon_scheduler_requests import Scheduler, TransitionError
 from scheduler_msgs.msg import Request
@@ -65,11 +64,6 @@ class SimpleSchedulerNode(object):
                  period=rospy.Duration(1.0)):
         """ Constructor. """
         rospy.init_node(node_name)
-        self.big_lock = threading.Lock()
-        """ Big scheduler lock.
-
-        Serializes rescheduling with message callbacks and other events.
-        """
         self.pool = ResourcePool()
         self.ready_queue = PriorityQueue()
         """ Queue of waiting requests. """
@@ -86,14 +80,13 @@ class SimpleSchedulerNode(object):
 
         See: :class:`.rocon_scheduler_requests.Scheduler` documentation.
         """
-        with self.big_lock:
-            rospy.logdebug('scheduler callback:')
-            for rq in rset.values():
-                rospy.logdebug('  ' + str(rq))
-                if rq.msg.status == Request.NEW:
-                    self.queue(rq, rset.requester_id)
-                elif rq.msg.status == Request.CANCELING:
-                    self.free(rq, rset.requester_id)
+        rospy.logdebug('scheduler callback:')
+        for rq in rset.values():
+            rospy.logdebug('  ' + str(rq))
+            if rq.msg.status == Request.NEW:
+                self.queue(rq, rset.requester_id)
+            elif rq.msg.status == Request.CANCELING:
+                self.free(rq, rset.requester_id)
 
     def dispatch(self):
         """ Grant any available resources to ready requests. """
@@ -146,8 +139,12 @@ class SimpleSchedulerNode(object):
         self.dispatch()                 # allocate queued requests
 
     def reschedule(self, event):
-        """ Periodic rescheduling. """
-        with self.big_lock:
+        """ Periodic rescheduling.
+
+        Uses the Big Scheduler Lock to serialize changes with
+        operations done within the scheduler callback method.
+        """
+        with self.sch.lock:
             while len(self.ready_queue) > 0:
                 # see if head of ready queue can be scheduled
                 elem = self.ready_queue.pop()

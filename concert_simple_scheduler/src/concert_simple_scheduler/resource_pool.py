@@ -193,7 +193,7 @@ class ResourcePool(object):
         # Make a list containing sets of the available resources
         # matching each requested item.
         matches = self.match_list(request.msg.resources,
-                                   {CurrentStatus.AVAILABLE})
+                                  {CurrentStatus.AVAILABLE})
         if not matches:                 # unsuccessful?
             return []                   # give up
 
