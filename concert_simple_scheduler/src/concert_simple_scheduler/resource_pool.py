@@ -192,7 +192,8 @@ class ResourcePool(object):
 
         # Make a list containing sets of the available resources
         # matching each requested item.
-        matches = self._match_list(request.msg.resources)
+        matches = self._match_list(request.msg.resources,
+                                   {CurrentStatus.AVAILABLE})
         if not matches:                 # unsuccessful?
             return []                   # give up
 
@@ -265,37 +266,39 @@ class ResourcePool(object):
         """
         return self.pool.get(resource_name, default)
 
-    def _match_list(self, resources):
+    def _match_list(self, resources, status_set):
         """
         Make a list containing sets of the available resources
         matching each element of *resources*.
 
-        *What if list is empty?*
+        :param resources: List of Resource messages to match.
+        :param status_set: Set of allowable PoolResource status values.
 
         :returns: List of :class:`set` containing names of matching
-            resources, empty if any item cannot be satisfied.
+            resources, empty if any item cannot be satisfied or the
+            *resources* list itself was empty.
         """
         matches = []
         for res_req in resources:
-            match_set = self._match_subset(res_req)
+            match_set = self._match_subset(res_req, status_set)
             if len(match_set) == 0:     # no matches for this resource?
                 return []               # give up
             matches.append(match_set)
         return matches
 
-    def _match_subset(self, resource_msg):
+    def _match_subset(self, resource_msg, status_set):
         """
         Make a set of names of all available resources matching *resource_msg*.
 
         :param resource_msg: Resource message from a scheduler Request.
         :type resource_msg: ``scheduler_msgs/Resource``
+        :param status_set: Set of allowable PoolResource status values.
 
         :returns: :class:`set` containing matching resource names.
         """
         avail = set()
         for res in self.pool.values():
-            if (res.status == CurrentStatus.AVAILABLE
-                    and res.match(resource_msg)):
+            if (res.status in status_set and res.match(resource_msg)):
                 avail.add(res.platform_info)
         return avail
 

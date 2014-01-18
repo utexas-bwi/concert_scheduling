@@ -195,10 +195,11 @@ class TestResourcePool(unittest.TestCase):
         rp2 = ResourcePool(DOUBLETON_POOL)
         self.assertEqual(len(rp2), 2)
         res = copy.deepcopy(ROBERTO_RESOURCE)
-        subset = rp2._match_subset(res)
+        subset = rp2._match_subset(res, {CurrentStatus.AVAILABLE})
         self.assertIn(ROBERTO_NAME, subset)
         self.assertEqual(subset, set([ROBERTO_NAME]))
-        self.assertEqual(rp2._match_list([ROBERTO_RESOURCE]),
+        self.assertEqual(rp2._match_list([ROBERTO_RESOURCE],
+                                         {CurrentStatus.AVAILABLE}),
                          [set([ROBERTO_NAME])])
         rq = copy.deepcopy(ROBERTO_REQUEST)
         alloc = rp2.allocate(rq)
@@ -230,12 +231,18 @@ class TestResourcePool(unittest.TestCase):
         res = Resource(
             name=TELEOP_RAPP,
             platform_info=NOT_TURTLEBOT_NAME)
-        subset = rp1._match_subset(res)
+        subset = rp1._match_subset(res, {CurrentStatus.AVAILABLE})
         self.assertEqual(len(subset), 0)
         self.assertNotIn(MARVIN_NAME, subset)
         self.assertNotIn(ROBERTO_NAME, subset)
         self.assertEqual(subset, set())
-        matches = rp1._match_list([NOT_TURTLEBOT_RESOURCE])
+        # test null resources list:
+        match_null = rp1._match_list([], {CurrentStatus.AVAILABLE})
+        self.assertEqual(match_null, [])
+        self.assertFalse(match_null)
+        # test not matching resource:
+        matches = rp1._match_list([NOT_TURTLEBOT_RESOURCE],
+                                  {CurrentStatus.AVAILABLE})
         self.assertEqual(matches, [])
         self.assertFalse(matches)
         rq = copy.deepcopy(NOT_TURTLEBOT_REQUEST)
@@ -248,11 +255,12 @@ class TestResourcePool(unittest.TestCase):
         res = Resource(
             name=TELEOP_RAPP,
             platform_info=ANY_NAME)
-        subset = rp1._match_subset(res)
+        subset = rp1._match_subset(res, {CurrentStatus.AVAILABLE})
         self.assertNotIn(MARVIN_NAME, subset)
         self.assertIn(ROBERTO_NAME, subset)
         self.assertEqual(subset, set([ROBERTO_NAME]))
-        self.assertEqual(rp1._match_list([ROBERTO_RESOURCE]),
+        self.assertEqual(rp1._match_list([ROBERTO_RESOURCE],
+                                         {CurrentStatus.AVAILABLE}),
                          [set([ROBERTO_NAME])])
         rq = copy.deepcopy(ANY_REQUEST)
         alloc = rp1.allocate(rq)
@@ -267,11 +275,12 @@ class TestResourcePool(unittest.TestCase):
         res = Resource(
             name=TELEOP_RAPP,
             platform_info=ANY_NAME)
-        subset = rp2._match_subset(res)
+        subset = rp2._match_subset(res, {CurrentStatus.AVAILABLE})
         self.assertIn(MARVIN_NAME, subset)
         self.assertIn(ROBERTO_NAME, subset)
         self.assertEqual(subset, set([MARVIN_NAME, ROBERTO_NAME]))
-        self.assertEqual(rp2._match_list([ROBERTO_RESOURCE]),
+        self.assertEqual(rp2._match_list([ROBERTO_RESOURCE],
+                                         {CurrentStatus.AVAILABLE}),
                          [set([ROBERTO_NAME])])
         rq = copy.deepcopy(ANY_REQUEST)
         alloc = rp2.allocate(rq)
