@@ -1,7 +1,7 @@
 Change history
 ==============
 
-0.0.1 (forthcoming)
--------------------
+(Forthcoming)
+-------------
 
  * Experimental Python scheduler node.

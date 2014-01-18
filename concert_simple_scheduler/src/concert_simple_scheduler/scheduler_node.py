@@ -1,6 +1,6 @@
 # Software License Agreement (BSD License)
 #
-# Copyright (C) 2013, Jack O'Quin
+# Copyright (C) 2013-2014, Jack O'Quin
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -42,11 +42,13 @@ ROCON services.
 .. include:: weblinks.rst
 
 """
+import threading
 import rospy
 from rocon_scheduler_requests import Scheduler, TransitionError
 from scheduler_msgs.msg import Request
 
 from .resource_pool import ResourcePool
+from .resource_pool import CurrentStatus
 from .priority_queue import PriorityQueue, QueueElement
 
 
@@ -54,18 +56,28 @@ class SimpleSchedulerNode(object):
     """ Simple scheduler node.
 
     :param node_name: (str) Default name of scheduler node.
+    :param period: (:class:`rospy.Duration`) Rescheduling time quantum.
 
     Derived versions of this class can implement different scheduling
     policies.
     """
-    def __init__(self, node_name='simple_scheduler'):
+    def __init__(self, node_name='simple_scheduler',
+                 period=rospy.Duration(1.0)):
         """ Constructor. """
         rospy.init_node(node_name)
+        self.big_lock = threading.Lock()
+        """ Big scheduler lock.
+
+        Serializes rescheduling with message callbacks and other events.
+        """
         self.pool = ResourcePool()
         self.ready_queue = PriorityQueue()
         """ Queue of waiting requests. """
         self.blocked_queue = PriorityQueue()
         """ Queue of blocked requests. """
+        self.period = period
+        """ Duration between periodic rescheduling. """
+        self.timer = rospy.Timer(self.period, self.reschedule)
         self.sch = Scheduler(self.callback)
         rospy.spin()
 
@@ -74,13 +86,14 @@ class SimpleSchedulerNode(object):
 
         See: :class:`.rocon_scheduler_requests.Scheduler` documentation.
         """
-        rospy.logdebug('scheduler callback:')
-        for rq in rset.values():
-            rospy.logdebug('  ' + str(rq))
-            if rq.msg.status == Request.NEW:
-                self.queue_ready(rq, rset.requester_id)
-            elif rq.msg.status == Request.CANCELING:
-                self.free(rq, rset.requester_id)
+        with self.big_lock:
+            rospy.logdebug('scheduler callback:')
+            for rq in rset.values():
+                rospy.logdebug('  ' + str(rq))
+                if rq.msg.status == Request.NEW:
+                    self.queue_ready(rq, rset.requester_id)
+                elif rq.msg.status == Request.CANCELING:
+                    self.free(rq, rset.requester_id)
 
     def dispatch(self):
         """ Grant any available resources to ready requests. """
@@ -126,15 +139,16 @@ class SimpleSchedulerNode(object):
             request.wait(reason=Request.UNAVAILABLE)
         except TransitionError:         # request no longer active?
             return
-        self.blocked_queue.append((requester_id, request))
+        self.blocked_queue.add(QueueElement(request, requester_id))
         rospy.loginfo('Request blocked: ' + str(request.get_uuid()))
 
     def queue_ready(self, request, requester_id):
+        """ Add *request* to ready queue, making it wait.
 
-        """ Add request to ready queue, making it wait.
-
-        :param request: (:class:`.RequestReply`)
-        :param requester_id: (:class:`uuid.UUID`) Unique requester identifier.
+        :param request: resource request to be queued.
+        :type request: :class:`.ActiveRequest`
+        :param requester_id: Unique requester identifier.
+        :type requester_id: :class:`uuid.UUID`
         """
         try:
             request.wait(reason=Request.BUSY)
@@ -142,7 +156,27 @@ class SimpleSchedulerNode(object):
             return
         self.ready_queue.add(QueueElement(request, requester_id))
         rospy.loginfo('Request queued: ' + str(request.get_uuid()))
-        self.dispatch()
+        self.dispatch()                 # allocate queued requests
+
+    def reschedule(self, event):
+        """ Periodic rescheduling. """
+        with self.big_lock:
+            while len(self.ready_queue) > 0:
+                # see if head of ready queue can be scheduled
+                elem = self.ready_queue.pop()
+                resources = elem.request.msg.resources
+                matches = self.pool._match_list(resources,
+                                                {CurrentStatus.AVAILABLE,
+                                                 CurrentStatus.ALLOCATED})
+                if matches:
+                    match_union = set(chain.from_iterable(matches))
+                    if len(match_union) >= len(resources):
+                        # there is enough in the pool, return elem to queue
+                        self.ready_queue.add(elem)
+                        return          # done rescheduling
+
+                # move elem to blocked_queue
+                self.blocked_queue.add(elem)
 
 
 def main():
