@@ -198,8 +198,8 @@ class TestResourcePool(unittest.TestCase):
         subset = rp2._match_subset(res, {CurrentStatus.AVAILABLE})
         self.assertIn(ROBERTO_NAME, subset)
         self.assertEqual(subset, set([ROBERTO_NAME]))
-        self.assertEqual(rp2._match_list([ROBERTO_RESOURCE],
-                                         {CurrentStatus.AVAILABLE}),
+        self.assertEqual(rp2.match_list([ROBERTO_RESOURCE],
+                                        {CurrentStatus.AVAILABLE}),
                          [set([ROBERTO_NAME])])
         rq = copy.deepcopy(ROBERTO_REQUEST)
         alloc = rp2.allocate(rq)
@@ -237,12 +237,12 @@ class TestResourcePool(unittest.TestCase):
         self.assertNotIn(ROBERTO_NAME, subset)
         self.assertEqual(subset, set())
         # test null resources list:
-        match_null = rp1._match_list([], {CurrentStatus.AVAILABLE})
+        match_null = rp1.match_list([], {CurrentStatus.AVAILABLE})
         self.assertEqual(match_null, [])
         self.assertFalse(match_null)
         # test not matching resource:
-        matches = rp1._match_list([NOT_TURTLEBOT_RESOURCE],
-                                  {CurrentStatus.AVAILABLE})
+        matches = rp1.match_list([NOT_TURTLEBOT_RESOURCE],
+                                 {CurrentStatus.AVAILABLE})
         self.assertEqual(matches, [])
         self.assertFalse(matches)
         rq = copy.deepcopy(NOT_TURTLEBOT_REQUEST)
@@ -259,8 +259,8 @@ class TestResourcePool(unittest.TestCase):
         self.assertNotIn(MARVIN_NAME, subset)
         self.assertIn(ROBERTO_NAME, subset)
         self.assertEqual(subset, set([ROBERTO_NAME]))
-        self.assertEqual(rp1._match_list([ROBERTO_RESOURCE],
-                                         {CurrentStatus.AVAILABLE}),
+        self.assertEqual(rp1.match_list([ROBERTO_RESOURCE],
+                                        {CurrentStatus.AVAILABLE}),
                          [set([ROBERTO_NAME])])
         rq = copy.deepcopy(ANY_REQUEST)
         alloc = rp1.allocate(rq)
@@ -279,8 +279,8 @@ class TestResourcePool(unittest.TestCase):
         self.assertIn(MARVIN_NAME, subset)
         self.assertIn(ROBERTO_NAME, subset)
         self.assertEqual(subset, set([MARVIN_NAME, ROBERTO_NAME]))
-        self.assertEqual(rp2._match_list([ROBERTO_RESOURCE],
-                                         {CurrentStatus.AVAILABLE}),
+        self.assertEqual(rp2.match_list([ROBERTO_RESOURCE],
+                                        {CurrentStatus.AVAILABLE}),
                          [set([ROBERTO_NAME])])
         rq = copy.deepcopy(ANY_REQUEST)
         alloc = rp2.allocate(rq)

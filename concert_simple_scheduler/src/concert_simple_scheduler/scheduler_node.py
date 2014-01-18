@@ -91,7 +91,7 @@ class SimpleSchedulerNode(object):
             for rq in rset.values():
                 rospy.logdebug('  ' + str(rq))
                 if rq.msg.status == Request.NEW:
-                    self.queue_ready(rq, rset.requester_id)
+                    self.queue(rq, rset.requester_id)
                 elif rq.msg.status == Request.CANCELING:
                     self.free(rq, rset.requester_id)
 
@@ -129,20 +129,7 @@ class SimpleSchedulerNode(object):
         request.close()
         self.dispatch()                 # grant waiting requests
 
-    def queue_blocked(self, request, requester_id):
-        """ Add request to blocked queue.
-
-        :param request: (:class:`.RequestReply`)
-        :param requester_id: (:class:`uuid.UUID`) Unique requester identifier.
-        """
-        try:
-            request.wait(reason=Request.UNAVAILABLE)
-        except TransitionError:         # request no longer active?
-            return
-        self.blocked_queue.add(QueueElement(request, requester_id))
-        rospy.loginfo('Request blocked: ' + str(request.get_uuid()))
-
-    def queue_ready(self, request, requester_id):
+    def queue(self, request, requester_id):
         """ Add *request* to ready queue, making it wait.
 
         :param request: resource request to be queued.
@@ -165,9 +152,9 @@ class SimpleSchedulerNode(object):
                 # see if head of ready queue can be scheduled
                 elem = self.ready_queue.pop()
                 resources = elem.request.msg.resources
-                matches = self.pool._match_list(resources,
-                                                {CurrentStatus.AVAILABLE,
-                                                 CurrentStatus.ALLOCATED})
+                status_set = {CurrentStatus.AVAILABLE,
+                              CurrentStatus.ALLOCATED}
+                matches = self.pool.match_list(resources, status_set)
                 if matches:
                     match_union = set(chain.from_iterable(matches))
                     if len(match_union) >= len(resources):
@@ -177,6 +164,8 @@ class SimpleSchedulerNode(object):
 
                 # move elem to blocked_queue
                 self.blocked_queue.add(elem)
+                rospy.loginfo('Request blocked: '
+                              + str(elem.request.get_uuid()))
 
 
 def main():
