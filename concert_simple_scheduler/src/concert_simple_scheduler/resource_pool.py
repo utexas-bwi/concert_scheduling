@@ -1,6 +1,6 @@
 # Software License Agreement (BSD License)
 #
-# Copyright (C) 2013, Jack O'Quin
+# Copyright (C) 2013-2014, Jack O'Quin
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -140,6 +140,11 @@ class ResourcePool(object):
 
        Equivalent to ``not resource_name in pool``.
 
+    .. describe:: str(pool)
+
+       :returns: Human-readable string representation of this
+           :class:`.ResourcePool`.
+
     """
     def __init__(self, msg=None):
         self.pool = {}
@@ -161,6 +166,12 @@ class ResourcePool(object):
 
     def __len__(self):
         return len(self.pool)
+
+    def __str__(self):
+        s = 'pool contents:'
+        for resource in self.pool.values():
+            s += '\n  ' + str(resource)
+        return s
 
     def allocate(self, request):
         """ Try to allocate all resources for a *request*.

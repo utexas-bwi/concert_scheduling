@@ -185,10 +185,11 @@ class TestResourcePool(unittest.TestCase):
                                             platform_info=MARVIN_NAME))
 
     def test_empty_constructor(self):
-        rp0 = ResourcePool()
-        self.assertIsNotNone(rp0)
-        self.assertEqual(len(rp0), 0)
-        self.assertNotIn(MARVIN_NAME, rp0)
+        pool = ResourcePool()
+        self.assertIsNotNone(pool)
+        self.assertEqual(len(pool), 0)
+        self.assertNotIn(MARVIN_NAME, pool)
+        self.assertMultiLineEqual(str(pool), 'pool contents:')
 
     def test_exact_resource_allocation(self):
         rp2 = ResourcePool(DOUBLETON_POOL)
@@ -287,11 +288,13 @@ class TestResourcePool(unittest.TestCase):
             self.fail('allocation failed to yield any expected result')
 
     def test_one_resource_constructor(self):
-        rp1 = ResourcePool(SINGLETON_POOL)
-        self.assertEqual(len(rp1), 1)
-        self.assertIn(ROBERTO_NAME, rp1)
-        self.assertNotIn(MARVIN_NAME, rp1)
-        #self.assertMultiLineEqual(str(rp1), str(SINGLETON_POOL))
+        pool = ResourcePool(SINGLETON_POOL)
+        self.assertEqual(len(pool), 1)
+        self.assertIn(ROBERTO_NAME, pool)
+        self.assertNotIn(MARVIN_NAME, pool)
+        self.assertMultiLineEqual(
+            str(pool),
+            'pool contents:\n  ' + str(PoolResource(ROBERTO)))
 
     def test_release_one_resource(self):
         rp2 = ResourcePool(DOUBLETON_POOL)
@@ -328,7 +331,6 @@ class TestResourcePool(unittest.TestCase):
         self.assertEqual(len(rp2), 2)
         self.assertIn(ROBERTO_NAME, rp2)
         self.assertIn(MARVIN_NAME, rp2)
-        #self.assertMultiLineEqual(str(rp2), str(DOUBLETON_POOL))
 
 
 class TestPoolResource(unittest.TestCase):
