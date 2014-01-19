@@ -197,12 +197,6 @@ class ResourcePool(object):
         if not matches:                 # unsuccessful?
             return []                   # give up
 
-        # See if there are as least as many different resources in the
-        # matches set as the number requested.
-        match_union = set(chain.from_iterable(matches))
-        if len(match_union) < n_wanted:
-            return []                   # not enough stuff
-
         # At least one resource is available that satisfies each item
         # requested.  Try to allocate them all in the order requested.
         alloc = self._allocate_permutation(range(n_wanted), request, matches)
@@ -215,6 +209,8 @@ class ResourcePool(object):
                 alloc = self._allocate_permutation(perm, request, matches)
                 if alloc:               # successful?
                     return alloc
+
+        # This request cannot be satisfied: @todo raise an exception
         return []                       # failure
 
     def _allocate_permutation(self, perm, request, matches):
@@ -266,39 +262,48 @@ class ResourcePool(object):
         """
         return self.pool.get(resource_name, default)
 
-    def match_list(self, resources, status_set):
+    def match_list(self, resources, criteria):
         """
         Make a list containing sets of the available resources
-        matching each element of *resources*.
+        matching each item in *resources*.
 
         :param resources: List of Resource messages to match.
-        :param status_set: Set of allowable PoolResource status values.
+        :param criteria: :class:`set` of resource status values allowed.
 
         :returns: List of :class:`set` containing names of matching
-            resources, empty if any item cannot be satisfied or the
-            *resources* list itself was empty.
+            resources, empty if any item cannot be satisfied, or there
+            are not enough resources, or the original *resources* list
+            was empty.
         """
         matches = []
         for res_req in resources:
-            match_set = self._match_subset(res_req, status_set)
+            match_set = self._match_subset(res_req, criteria)
             if len(match_set) == 0:     # no matches for this resource?
                 return []               # give up
             matches.append(match_set)
+        if not matches:
+            return []                   # give up
+
+        # Each individual request can be satisfied, but there might
+        # not be enough to satisfy them all at once.  Verify that the
+        # union of the match sets contains as many resources as requested.
+        match_union = set(chain.from_iterable(matches))
+        if len(match_union) < len(resources):
+            return []                   # not enough stuff
         return matches
 
-    def _match_subset(self, resource_msg, status_set):
+    def _match_subset(self, resource_msg, criteria):
         """
         Make a set of names of all available resources matching *resource_msg*.
 
         :param resource_msg: Resource message from a scheduler Request.
         :type resource_msg: ``scheduler_msgs/Resource``
-        :param status_set: Set of allowable PoolResource status values.
-
+        :param criteria: :class:`set` of resource status values allowed.
         :returns: :class:`set` containing matching resource names.
         """
         avail = set()
         for res in self.pool.values():
-            if (res.status in status_set and res.match(resource_msg)):
+            if (res.status in criteria and res.match(resource_msg)):
                 avail.add(res.platform_info)
         return avail
 

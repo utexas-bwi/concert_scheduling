@@ -148,21 +148,25 @@ class SimpleSchedulerNode(object):
             while len(self.ready_queue) > 0:
                 # see if head of ready queue can be scheduled
                 elem = self.ready_queue.pop()
-                resources = elem.request.msg.resources
-                status_set = {CurrentStatus.AVAILABLE,
-                              CurrentStatus.ALLOCATED}
-                matches = self.pool.match_list(resources, status_set)
-                if matches:
-                    match_union = set(chain.from_iterable(matches))
-                    if len(match_union) >= len(resources):
-                        # there is enough in the pool, return elem to queue
-                        self.ready_queue.add(elem)
-                        return          # done rescheduling
+
+                # see if all available or allocated resources would suffice
+                criteria = {CurrentStatus.AVAILABLE,
+                            CurrentStatus.ALLOCATED}
+                if self.pool.match_list(elem.request.msg.resources, criteria):
+                    # request not blocked
+                    self.ready_queue.add(elem)
+                    return              # done rescheduling
 
                 # move elem to blocked_queue
+                rq_id = elem.request.get_uuid()
+                rospy.loginfo('Request blocked: ' + str(rq_id))
+                elem.request.wait(reason=Request.UNAVAILABLE)
                 self.blocked_queue.add(elem)
-                rospy.loginfo('Request blocked: '
-                              + str(elem.request.get_uuid()))
+                try:
+                    self.sch.notify(elem.requester_id)
+                except KeyError:       # requester now missing?
+                    # remove request
+                    self.blocked_queue.remove(rq_id)
 
 
 def main():
