@@ -119,8 +119,7 @@ class TestResourcePool(unittest.TestCase):
                                     platform_info=DUDE2_NAME),
                            Resource(name=TELEOP_RAPP,
                                     platform_info=DUDE3_NAME)]))
-        alloc = pool.allocate(rq)
-        self.assertFalse(alloc)
+        self.assertRaises(InvalidRequestError, pool.allocate, rq)
         for name in [DUDE1_NAME, DUDE2_NAME, DUDE3_NAME, DUDE4_NAME]:
             self.assertEqual(pool[name].status, CurrentStatus.AVAILABLE)
             self.assertIsNone(pool[name].owner)

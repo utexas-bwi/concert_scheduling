@@ -70,6 +70,11 @@ except ImportError:
 
 
 ## Exceptions
+class InvalidRequestError(Exception):
+    """ Request cannot be satisfied as specified. """
+    pass
+
+
 class ResourceNotAvailableError(Exception):
     """ Error exception: resource not available. """
     pass
@@ -184,11 +189,15 @@ class ResourcePool(object):
             allocated, in requested order with platform info fully
             resolved; or ``[]`` if not everything is available.
 
+        :raises: :exc:`.InvalidRequestError` if the request is not valid.
+
         If successful, matching ROCON resources are allocated to this
         *request*.  Otherwise, the *request* remains unchanged.
 
         """
         n_wanted = len(request.msg.resources)  # number of resources wanted
+        if n_wanted == 0:
+            raise InvalidRequestError('No resources requested.')
 
         # Make a list containing sets of the available resources
         # matching each requested item.
@@ -210,8 +219,8 @@ class ResourcePool(object):
                 if alloc:               # successful?
                     return alloc
 
-        # This request cannot be satisfied: @todo raise an exception
-        return []                       # failure
+        raise InvalidRequestError(
+            'Resources are available, but this request cannot be satisfied.')
 
     def _allocate_permutation(self, perm, request, matches):
         """ Try to allocate some permutation of resources for a *request*.
