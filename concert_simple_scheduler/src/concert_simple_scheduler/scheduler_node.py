@@ -80,6 +80,9 @@ class SimpleSchedulerNode(object):
     def callback(self, rset):
         """ Scheduler request callback.
 
+        Called in the scheduler callback thread holding the Big
+        Scheduler Lock.
+
         See: :class:`.rocon_scheduler_requests.Scheduler` documentation.
         """
         rospy.logdebug('scheduler callback:')
@@ -159,19 +162,19 @@ class SimpleSchedulerNode(object):
         rospy.loginfo('Request queued: ' + str(request.get_uuid()))
         self.notification_set.add(requester_id)
 
-    def reject_request(self, elem, exception):
-        """ Reject an invalid *request*.
+    def reject_request(self, element, exception):
+        """ Reject an invalid queue *element*.
 
-        :param elem: Queue element to reject.
-        :type elem: :class:`.QueueElement`
+        :param element: Queue element to reject.
+        :type element: :class:`.QueueElement`
         :param exception: Associated exception object.
         """
         rospy.logwarn(str(exception))
         if hasattr(Request, "INVALID"):  # new reason code defined?
-            elem.request.cancel(Request.INVALID)
+            element.request.cancel(Request.INVALID)
         else:
-            elem.request.cancel(Request.UNAVAILABLE)
-        self.notification_set.add(elem.requester_id)
+            element.request.cancel(Request.UNAVAILABLE)
+        self.notification_set.add(element.requester_id)
 
     def reschedule(self, event):
         """ Periodic rescheduling thread.
