@@ -92,8 +92,7 @@ class SimpleSchedulerNode(object):
                 self.queue(rq, rset.requester_id)
             elif rq.msg.status == Request.CANCELING:
                 self.free(rq, rset.requester_id)
-        self.dispatch()                 # allocate queued requests
-        self.notify_requesters()        # notify affected requesters
+        self.dispatch()                 # try to allocate ready requests
 
     def dispatch(self):
         """ Grant any available resources to ready requests. """
@@ -110,7 +109,7 @@ class SimpleSchedulerNode(object):
             if not resources:           # top request cannot be satisfied?
                 # Return it to head of queue.
                 self.ready_queue.add(elem)
-                return
+                break                   # stop looking
 
             try:
                 elem.request.grant(resources)
@@ -120,6 +119,9 @@ class SimpleSchedulerNode(object):
                 # Return allocated resources to the pool.
                 self.pool.release_resources(resources)
             self.notification_set.add(elem.requester_id)
+
+        # finally, notify all affected requesters
+        self.notify_requesters()
 
     def free(self, request, requester_id):
         """ Free all resources allocated for this *request*.
@@ -205,8 +207,8 @@ class SimpleSchedulerNode(object):
                 self.blocked_queue.add(elem)
                 self.notification_set.add(elem.requester_id)
 
-            # finally, notify all affected requesters
-            self.notify_requesters()
+            # try to allocate any remaining ready requests
+            self.dispatch()
 
     def shutdown_requester(self, requester_id):
         """ Shut down this requester, recovering all resources assigned. """
