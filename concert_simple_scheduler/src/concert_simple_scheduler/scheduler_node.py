@@ -71,6 +71,8 @@ class SimpleSchedulerNode(object):
         """ Queue of blocked requests. """
         self.period = period
         """ Duration between periodic rescheduling. """
+        self.notification_set = set()
+        """ Set of requester identifiers to notify. """
         self.timer = rospy.Timer(self.period, self.reschedule)
         self.sch = Scheduler(self.callback)
         rospy.spin()
@@ -87,17 +89,26 @@ class SimpleSchedulerNode(object):
                 self.queue(rq, rset.requester_id)
             elif rq.msg.status == Request.CANCELING:
                 self.free(rq, rset.requester_id)
+        self.dispatch()                 # allocate queued requests
+        self.notify_requesters()        # notify affected requesters
 
     def dispatch(self):
         """ Grant any available resources to ready requests. """
         while len(self.ready_queue) > 0:
             # Try to allocate top element in the ready queue.
             elem = self.ready_queue.pop()
-            resources = self.pool.allocate(elem.request)
+            resources = []
+            try:
+                resources = self.pool.allocate(elem.request)
+            except InvalidRequestError as ex:
+                self.reject_request(elem, ex)
+                continue                # skip to next queue element
+
             if not resources:           # top request cannot be satisfied?
                 # Return it to head of queue.
                 self.ready_queue.add(elem)
                 return
+
             try:
                 elem.request.grant(resources)
                 rospy.loginfo(
@@ -105,22 +116,32 @@ class SimpleSchedulerNode(object):
             except TransitionError:     # request no longer active?
                 # Return allocated resources to the pool.
                 self.pool.release_resources(resources)
-            try:
-                self.sch.notify(elem.requester_id)
-            except KeyError:            # requester now missing?
-                # Release requested allocation.
-                self.pool.release_request(elem.request)
+            self.notification_set.add(elem.requester_id)
 
     def free(self, request, requester_id):
         """ Free all resources allocated for this *request*.
 
-        :param request: (:class:`.RequestReply`)
+        :param request: (:class:`.ActiveRequest`)
         :param requester_id: (:class:`uuid.UUID`) Unique requester identifier.
         """
         self.pool.release_request(request)
         rospy.loginfo('Request canceled: ' + str(request.get_uuid()))
         request.close()
-        self.dispatch()                 # grant waiting requests
+        self.notification_set.add(requester_id)
+
+    def notify_requesters(self):
+        """ Notify affected requesters.
+
+        :pre: self.notification_set contains requesters to notify.
+        :post: self.notification_set is empty.
+        """
+        for requester_id in self.notification_set:
+            try:
+                self.sch.notify(requester_id)
+            except KeyError:            # requester now missing?
+                # shut down this requester
+                self.shutdown_requester(requester_id)
+        self.notification_set.clear()
 
     def queue(self, request, requester_id):
         """ Add *request* to ready queue, making it wait.
@@ -136,13 +157,30 @@ class SimpleSchedulerNode(object):
             return
         self.ready_queue.add(QueueElement(request, requester_id))
         rospy.loginfo('Request queued: ' + str(request.get_uuid()))
-        self.dispatch()                 # allocate queued requests
+        self.notification_set.add(requester_id)
+
+    def reject_request(self, elem, exception):
+        """ Reject an invalid *request*.
+
+        :param elem: Queue element to reject.
+        :type elem: :class:`.QueueElement`
+        :param exception: Associated exception object.
+        """
+        rospy.logwarn(str(exception))
+        if hasattr(Request, "INVALID"):  # new reason code defined?
+            elem.request.cancel(Request.INVALID)
+        else:
+            elem.request.cancel(Request.UNAVAILABLE)
+        self.notification_set.add(elem.requester_id)
 
     def reschedule(self, event):
-        """ Periodic rescheduling.
+        """ Periodic rescheduling thread.
+
+        Moves requests that cannot be satisfied with
+        currently-available resources to the blocked queue.
 
         Uses the Big Scheduler Lock to serialize changes with
-        operations done within the scheduler callback method.
+        operations done within the scheduler callback thread.
         """
         with self.sch.lock:
             while len(self.ready_queue) > 0:
@@ -155,18 +193,21 @@ class SimpleSchedulerNode(object):
                 if self.pool.match_list(elem.request.msg.resources, criteria):
                     # request not blocked
                     self.ready_queue.add(elem)
-                    return              # done rescheduling
+                    break               # done rescheduling
 
                 # move elem to blocked_queue
-                rq_id = elem.request.get_uuid()
-                rospy.loginfo('Request blocked: ' + str(rq_id))
+                rospy.loginfo('Request blocked: '
+                              + str(elem.request.get_uuid()))
                 elem.request.wait(reason=Request.UNAVAILABLE)
                 self.blocked_queue.add(elem)
-                try:
-                    self.sch.notify(elem.requester_id)
-                except KeyError:       # requester now missing?
-                    # remove request
-                    self.blocked_queue.remove(rq_id)
+                self.notification_set.add(elem.requester_id)
+
+            # finally, notify all affected requesters
+            self.notify_requesters()
+
+    def shutdown_requester(self, requester_id):
+        """ Shut down this requester, recovering all resources assigned. """
+        pass                            # stub
 
 
 def main():
