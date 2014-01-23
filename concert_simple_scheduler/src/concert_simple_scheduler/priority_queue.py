@@ -104,6 +104,18 @@ class PriorityQueue(object):
         self._requests[hash(element)] = element
         heapq.heappush(self._queue, element)
 
+    def peek(self):
+        """ Return the top-priority element from the queue head
+        without removing it.
+
+        :raises: :exc:`IndexError` if queue was empty.
+        """
+        # Return the top element that was not previously removed.
+        for element in self._queue:
+            if element.active:          # not previously removed?
+                return element
+        raise IndexError('pop from an empty priority queue')
+
     def pop(self):
         """ Remove the top-priority element from the queue head.
 

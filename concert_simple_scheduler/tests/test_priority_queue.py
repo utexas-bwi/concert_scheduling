@@ -161,17 +161,22 @@ class TestPriorityQueue(unittest.TestCase):
     def test_add_duplicate_request(self):
         pq = PriorityQueue()
         self.assertEqual(len(pq), 0)
-        pq.add(QueueElement(ROBERTO_REQUEST, RQR_ID))
+        elem = QueueElement(ROBERTO_REQUEST, RQR_ID)
+        pq.add(elem)
         self.assertEqual(len(pq), 1)
+        self.assertEqual(pq.peek(), elem)
         dup = copy.deepcopy(ROBERTO_REQUEST)
         pq.add(QueueElement(dup, RQR_ID))
         self.assertEqual(len(pq), 1)
+        self.assertEqual(pq.peek(), elem)
 
     def test_add_one_request(self):
         pq = PriorityQueue()
         self.assertEqual(len(pq), 0)
-        pq.add(QueueElement(ROBERTO_REQUEST, RQR_ID))
+        elem = QueueElement(ROBERTO_REQUEST, RQR_ID)
+        pq.add(elem)
         self.assertEqual(len(pq), 1)
+        self.assertEqual(pq.peek(), elem)
 
     def test_empty_constructor(self):
         pq0 = PriorityQueue()
@@ -215,25 +220,30 @@ class TestPriorityQueue(unittest.TestCase):
 
     def test_remove_one_request(self):
         pq = PriorityQueue()
-        pq.add(QueueElement(MARVIN_REQUEST, RQR_ID))
-        pq.add(QueueElement(ROBERTO_REQUEST, RQR_ID))
+        marvin = QueueElement(MARVIN_REQUEST, RQR_ID)
+        pq.add(marvin)
+        roberto = QueueElement(ROBERTO_REQUEST, RQR_ID)
+        pq.add(roberto)
         self.assertEqual(len(pq), 2)
         pq.remove(RQ1_UUID)
+        self.assertEqual(pq.peek(), roberto)
         self.assertEqual(len(pq), 1)
         self.assertMultiLineEqual(str(pq.pop().request), str(ROBERTO_REQUEST))
 
     def test_two_request_constructor(self):
-        pq2 = PriorityQueue([
+        pq = PriorityQueue([
                 QueueElement(MARVIN_REQUEST, RQR_ID),
                 QueueElement(ROBERTO_REQUEST, RQR_ID)])
-        self.assertEqual(len(pq2), 2)
+        self.assertEqual(len(pq), 2)
+        self.assertEqual(pq.peek(), QueueElement(MARVIN_REQUEST, RQR_ID))
 
-        rq1 = pq2.pop()
-        self.assertEqual(len(pq2), 1)
+        rq1 = pq.pop()
+        self.assertEqual(len(pq), 1)
         self.assertMultiLineEqual(str(rq1.request), str(MARVIN_REQUEST))
+        self.assertEqual(pq.peek(), QueueElement(ROBERTO_REQUEST, RQR_ID))
 
-        rq2 = pq2.pop()
-        self.assertEqual(len(pq2), 0)
+        rq2 = pq.pop()
+        self.assertEqual(len(pq), 0)
         self.assertMultiLineEqual(str(rq2.request), str(ROBERTO_REQUEST))
 
 if __name__ == '__main__':
