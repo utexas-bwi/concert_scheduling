@@ -95,7 +95,10 @@ class SimpleSchedulerNode(object):
         self.dispatch()                 # try to allocate ready requests
 
     def dispatch(self):
-        """ Grant any available resources to ready requests. """
+        """ Grant any available resources to ready requests.
+
+        Notifies all affected requesters.
+        """
         while len(self.ready_queue) > 0:
             # Try to allocate top element in the ready queue.
             elem = self.ready_queue.pop()
@@ -132,6 +135,12 @@ class SimpleSchedulerNode(object):
         self.pool.release_request(request)
         rospy.loginfo('Request canceled: ' + str(request.get_uuid()))
         request.close()
+        # remove request from any queues
+        request_id = request.get_uuid()
+        for queue in [self.ready_queue, self.blocked_queue]:
+            if request_id in queue:
+                queue.remove(request_id)
+                break                   # should not be in any other queue
         self.notification_set.add(requester_id)
 
     def notify_requesters(self):
@@ -212,7 +221,10 @@ class SimpleSchedulerNode(object):
 
     def shutdown_requester(self, requester_id):
         """ Shut down this requester, recovering all resources assigned. """
-        pass                            # stub
+        for queue in [self.ready_queue, self.blocked_queue]:
+            for rq in queue:
+                if rq.requester_id == requester_id:
+                    self.free(rq, requester_id)
 
 
 def main():

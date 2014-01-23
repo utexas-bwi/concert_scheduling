@@ -178,10 +178,16 @@ class TestPriorityQueue(unittest.TestCase):
         self.assertIsNotNone(pq0)
         self.assertEqual(len(pq0), 0)
         self.assertRaises(IndexError, pq0.pop)
+        self.assertNotIn(RQ1_UUID, pq0)
+        self.assertNotIn(RQ2_UUID, pq0)
 
     def test_one_request_constructor(self):
-        pq = PriorityQueue([QueueElement(ROBERTO_REQUEST, RQR_ID)])
+        elem = QueueElement(ROBERTO_REQUEST, RQR_ID)
+        pq = PriorityQueue([elem])
         self.assertEqual(len(pq), 1)
+        self.assertNotIn(RQ1_UUID, pq)
+        self.assertIn(RQ2_UUID, pq)
+        self.assertIn(elem, pq)
         rq1 = pq.pop()
         self.assertEqual(len(pq), 0)
         self.assertMultiLineEqual(str(rq1.request), str(ROBERTO_REQUEST))

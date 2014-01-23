@@ -59,6 +59,12 @@ class PriorityQueue(object):
 
        :returns: The number of elements in the *queue*.
 
+    .. describe:: request in queue
+
+       :param request: (:class:`uuid.UUID` or :class:`.QueueElement`)
+           *request* to query.
+       :returns: ``True`` if *request* is in the *queue*.
+
     """
     def __init__(self, iterable=[]):
         self._queue = []
@@ -67,6 +73,9 @@ class PriorityQueue(object):
         """ Dictionary of queued requests. """
         for element in iterable:
             self.add(element)
+
+    def __contains__(self, request):
+        return hash(request) in self._requests
 
     def __len__(self):
         return len(self._requests)
