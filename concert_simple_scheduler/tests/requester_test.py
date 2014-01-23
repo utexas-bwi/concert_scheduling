@@ -26,15 +26,14 @@ class TestTimeoutRequester(unittest.TestCase):
         for rq in rset.values():
             rospy.logdebug('  ' + str(rq))
             if rq.msg.status == Request.WAITING:
-                rospy.loginfo('  request queued: ' + str(rq.get_uuid()))
+                rospy.loginfo('  request queued: ' + str(rq.uuid))
             elif rq.msg.status == Request.GRANTED:
-                rospy.loginfo('  request granted: ' + str(rq.get_uuid()))
+                rospy.loginfo('  request granted: ' + str(rq.uuid))
             elif rq.msg.status == Request.CLOSED:
-                rospy.loginfo('  request closed: ' + str(rq.get_uuid()))
+                rospy.loginfo('  request closed: ' + str(rq.uuid))
             elif rq.msg.status == Request.PREEMPTING:
                 rospy.loginfo('  request preempted (reason='
-                              + str(rq.msg.reason) + '): '
-                              + str(rq.get_uuid()))
+                              + str(rq.msg.reason) + '): ' + str(rq.uuid))
                 rq.cancel()     # release preempted resources immediately
 
     def periodic_update(self, event):

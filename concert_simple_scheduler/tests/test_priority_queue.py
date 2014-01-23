@@ -208,7 +208,7 @@ class TestPriorityQueue(unittest.TestCase):
         self.assertEqual(len(pq), 2)
         qe = pq.pop()
         self.assertEqual(len(pq), 1)
-        self.assertEqual(qe.request.get_uuid(), RQ2_UUID)
+        self.assertEqual(qe.request.uuid, RQ2_UUID)
         self.assertEqual(qe.request.msg.priority, 10)
         self.assertEqual(qe.request.msg.resources[0].platform_info,
                          ROBERTO_NAME)

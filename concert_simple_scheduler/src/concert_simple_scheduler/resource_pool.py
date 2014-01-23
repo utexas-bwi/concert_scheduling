@@ -256,7 +256,7 @@ class ResourcePool(object):
                 return []               # failure: no matches work
 
         # successful: allocate to this request
-        req_id = request.get_uuid()
+        req_id = request.uuid
         for resource in alloc:
             self.pool[resource.platform_info].allocate(req_id)
         return alloc                    # success
@@ -324,7 +324,7 @@ class ResourcePool(object):
 
         Only appropriate when this *request* is being closed.
         """
-        rq_id = request.get_uuid()
+        rq_id = request.uuid
         for res in request.allocations:
             self.pool[res.platform_info].release(rq_id)
 

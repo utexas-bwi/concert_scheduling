@@ -117,7 +117,7 @@ class SimpleSchedulerNode(object):
             try:
                 elem.request.grant(resources)
                 rospy.loginfo(
-                    'Request granted: ' + str(elem.request.get_uuid()))
+                    'Request granted: ' + str(elem.request.uuid))
             except TransitionError:     # request no longer active?
                 # Return allocated resources to the pool.
                 self.pool.release_resources(resources)
@@ -133,10 +133,10 @@ class SimpleSchedulerNode(object):
         :param requester_id: (:class:`uuid.UUID`) Unique requester identifier.
         """
         self.pool.release_request(request)
-        rospy.loginfo('Request canceled: ' + str(request.get_uuid()))
+        rospy.loginfo('Request canceled: ' + str(request.uuid))
         request.close()
         # remove request from any queues
-        request_id = request.get_uuid()
+        request_id = request.uuid
         for queue in [self.ready_queue, self.blocked_queue]:
             if request_id in queue:
                 queue.remove(request_id)
@@ -170,7 +170,7 @@ class SimpleSchedulerNode(object):
         except TransitionError:         # request no longer active?
             return
         self.ready_queue.add(QueueElement(request, requester_id))
-        rospy.loginfo('Request queued: ' + str(request.get_uuid()))
+        rospy.loginfo('Request queued: ' + str(request.uuid))
         self.notification_set.add(requester_id)
 
     def reject_request(self, element, exception):
@@ -211,7 +211,7 @@ class SimpleSchedulerNode(object):
 
                 # move elem to blocked_queue
                 rospy.loginfo('Request blocked: '
-                              + str(elem.request.get_uuid()))
+                              + str(elem.request.uuid))
                 elem.request.wait(reason=Request.UNAVAILABLE)
                 self.blocked_queue.add(elem)
                 self.notification_set.add(elem.requester_id)

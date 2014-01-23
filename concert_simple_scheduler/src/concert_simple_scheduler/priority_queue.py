@@ -201,7 +201,7 @@ class QueueElement(object):
         return self.request.msg.id == other.request.msg.id
 
     def __hash__(self):
-        return hash(self.request.get_uuid())
+        return hash(self.request.uuid)
 
     def __lt__(self, other):
         return (self.request.msg.priority > other.request.msg.priority
