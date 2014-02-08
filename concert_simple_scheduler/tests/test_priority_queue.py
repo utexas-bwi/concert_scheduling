@@ -23,16 +23,16 @@ RQ1_UUID = uuid.uuid4()
 RQ2_UUID = uuid.uuid4()
 EXAMPLE_RAPP = 'tests/example_rapp'
 MARVIN_NAME = 'rocon:///linux/precise/ros/turtlebot/marvin'
-MARVIN = Resource(platform_info=MARVIN_NAME, name=EXAMPLE_RAPP)
+MARVIN = Resource(uri=MARVIN_NAME, rapp=EXAMPLE_RAPP)
 ROBERTO_NAME = 'rocon:///linux/precise/ros/turtlebot/roberto'
-ROBERTO = Resource(platform_info=ROBERTO_NAME, name=EXAMPLE_RAPP)
+ROBERTO = Resource(uri=ROBERTO_NAME, rapp=EXAMPLE_RAPP)
 
 # some useful Resource and Request messages
-MARVIN_RESOURCE = Resource(name=EXAMPLE_RAPP, platform_info=MARVIN_NAME)
+MARVIN_RESOURCE = Resource(rapp=EXAMPLE_RAPP, uri=MARVIN_NAME)
 MARVIN_REQUEST = ActiveRequest(Request(
     id=unique_id.toMsg(RQ1_UUID),
     resources=[MARVIN_RESOURCE]))
-ROBERTO_RESOURCE = Resource(name=EXAMPLE_RAPP, platform_info=ROBERTO_NAME)
+ROBERTO_RESOURCE = Resource(rapp=EXAMPLE_RAPP, uri=ROBERTO_NAME)
 ROBERTO_REQUEST = ActiveRequest(Request(
     id=unique_id.toMsg(RQ2_UUID),
     resources=[ROBERTO_RESOURCE]))
@@ -215,8 +215,7 @@ class TestPriorityQueue(unittest.TestCase):
         self.assertEqual(len(pq), 1)
         self.assertEqual(qe.request.uuid, RQ2_UUID)
         self.assertEqual(qe.request.msg.priority, 10)
-        self.assertEqual(qe.request.msg.resources[0].platform_info,
-                         ROBERTO_NAME)
+        self.assertEqual(qe.request.msg.resources[0].uri, ROBERTO_NAME)
 
     def test_remove_one_request(self):
         pq = PriorityQueue()

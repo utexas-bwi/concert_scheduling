@@ -30,11 +30,9 @@ TELEOP_RAPP = 'rocon_apps/teleop'
 TEST_RAPPS = set((TELEOP_RAPP, EXAMPLE_RAPP))
 
 TEST_STATUS = CurrentStatus(
-    platform_info='rocon:///linux/precise/ros/segbot/roberto',
-    rapps=[EXAMPLE_RAPP])
+    uri='rocon:///linux/precise/ros/segbot/roberto', rapps=[EXAMPLE_RAPP])
 TEST_RESOURCE = Resource(
-    platform_info='rocon:///linux/precise/ros/segbot/roberto',
-    name=EXAMPLE_RAPP)
+    uri='rocon:///linux/precise/ros/segbot/roberto', rapp=EXAMPLE_RAPP)
 TEST_RESOURCE_NAME = 'rocon:///linux/precise/ros/segbot/roberto'
 TEST_RESOURCE_STRING = (
     """rocon:///linux/precise/ros/segbot/roberto, status: 0
@@ -44,8 +42,7 @@ TEST_RESOURCE_STRING = (
 
 # this Resource has an old-format platform_info string:
 TEST_ANOTHER = Resource(
-    platform_info='linux.precise.ros.segbot.marvin',
-    name=EXAMPLE_RAPP)
+    uri='linux.precise.ros.segbot.marvin', rapp=EXAMPLE_RAPP)
 TEST_ANOTHER_NAME = 'rocon:///linux/precise/ros/segbot/marvin'
 TEST_ANOTHER_STRING = (
     """rocon:///linux/precise/ros/segbot/marvin, status: 0
@@ -61,25 +58,23 @@ DUDE3_NAME = 'rocon:///linux/precise/ros/turtlebot/dude3'
 DUDE4_NAME = 'rocon:///linux/precise/ros/turtlebot/dude4'
 MARVIN_NAME = 'rocon:///linux/precise/ros/turtlebot/marvin'
 ROBERTO_NAME = 'rocon:///linux/precise/ros/turtlebot/roberto'
-MARVIN = CurrentStatus(platform_info=MARVIN_NAME, rapps=TEST_RAPPS)
-ROBERTO = CurrentStatus(platform_info=ROBERTO_NAME, rapps=TEST_RAPPS)
+MARVIN = CurrentStatus(uri=MARVIN_NAME, rapps=TEST_RAPPS)
+ROBERTO = CurrentStatus(uri=ROBERTO_NAME, rapps=TEST_RAPPS)
 
 SINGLETON_POOL = KnownResources(resources=[ROBERTO])
 DOUBLETON_POOL = KnownResources(resources=[MARVIN, ROBERTO])
 
 # some useful Resource and Request messages
-ANY_RESOURCE = Resource(name=TELEOP_RAPP, platform_info=ANY_NAME)
+ANY_RESOURCE = Resource(rapp=TELEOP_RAPP, uri=ANY_NAME)
 ANY_REQUEST = ActiveRequest(Request(
     id=unique_id.toMsg(RQ_UUID),
     resources=[ANY_RESOURCE]))
-MARVIN_RESOURCE = Resource(name=TELEOP_RAPP, platform_info=MARVIN_NAME)
-ROBERTO_RESOURCE = Resource(name=TELEOP_RAPP, platform_info=ROBERTO_NAME)
+MARVIN_RESOURCE = Resource(rapp=TELEOP_RAPP, uri=MARVIN_NAME)
+ROBERTO_RESOURCE = Resource(rapp=TELEOP_RAPP, uri=ROBERTO_NAME)
 ROBERTO_REQUEST = ActiveRequest(Request(
     id=unique_id.toMsg(RQ_UUID),
     resources=[ROBERTO_RESOURCE]))
-NOT_TURTLEBOT_RESOURCE = Resource(
-    name=TELEOP_RAPP,
-    platform_info=NOT_TURTLEBOT_NAME)
+NOT_TURTLEBOT_RESOURCE = Resource(rapp=TELEOP_RAPP, uri=NOT_TURTLEBOT_NAME)
 NOT_TURTLEBOT_REQUEST = ActiveRequest(Request(
     id=unique_id.toMsg(RQ_UUID),
     resources=[NOT_TURTLEBOT_RESOURCE]))
@@ -101,24 +96,17 @@ class TestResourcePool(unittest.TestCase):
         after the initial failure.
         """
         pool = ResourcePool(KnownResources(resources=[
-                    CurrentStatus(platform_info=DUDE1_NAME,
-                                  rapps={TELEOP_RAPP}),
-                    CurrentStatus(platform_info=DUDE2_NAME,
-                                  rapps={TELEOP_RAPP}),
-                    CurrentStatus(platform_info=DUDE3_NAME,
-                                  rapps={TELEOP_RAPP}),
-                    CurrentStatus(platform_info=DUDE4_NAME,
+                    CurrentStatus(uri=DUDE1_NAME, rapps={TELEOP_RAPP}),
+                    CurrentStatus(uri=DUDE2_NAME, rapps={TELEOP_RAPP}),
+                    CurrentStatus(uri=DUDE3_NAME, rapps={TELEOP_RAPP}),
+                    CurrentStatus(uri=DUDE4_NAME,
                                   rapps={TELEOP_RAPP, EXAMPLE_RAPP})]))
         rq = ActiveRequest(Request(
                 id=unique_id.toMsg(RQ_UUID),
-                resources=[Resource(name=TELEOP_RAPP,
-                                    platform_info=ANY_NAME),
-                           Resource(name=EXAMPLE_RAPP,
-                                    platform_info=DUDE4_NAME),
-                           Resource(name=TELEOP_RAPP,
-                                    platform_info=DUDE2_NAME),
-                           Resource(name=TELEOP_RAPP,
-                                    platform_info=DUDE3_NAME)]))
+                resources=[Resource(rapp=TELEOP_RAPP, uri=ANY_NAME),
+                           Resource(rapp=EXAMPLE_RAPP, uri=DUDE4_NAME),
+                           Resource(rapp=TELEOP_RAPP, uri=DUDE2_NAME),
+                           Resource(rapp=TELEOP_RAPP, uri=DUDE3_NAME)]))
         self.assertRaises(InvalidRequestError, pool.allocate, rq)
         for name in [DUDE1_NAME, DUDE2_NAME, DUDE3_NAME, DUDE4_NAME]:
             self.assertEqual(pool[name].status, CurrentStatus.AVAILABLE)
@@ -129,30 +117,23 @@ class TestResourcePool(unittest.TestCase):
         order of the request is different, so the allocator succeeds.
         """
         pool = ResourcePool(KnownResources(resources=[
-                    CurrentStatus(platform_info=DUDE1_NAME,
-                                  rapps={TELEOP_RAPP}),
-                    CurrentStatus(platform_info=DUDE2_NAME,
-                                  rapps={TELEOP_RAPP}),
-                    CurrentStatus(platform_info=DUDE3_NAME,
-                                  rapps={TELEOP_RAPP}),
-                    CurrentStatus(platform_info=DUDE4_NAME,
+                    CurrentStatus(uri=DUDE1_NAME, rapps={TELEOP_RAPP}),
+                    CurrentStatus(uri=DUDE2_NAME, rapps={TELEOP_RAPP}),
+                    CurrentStatus(uri=DUDE3_NAME, rapps={TELEOP_RAPP}),
+                    CurrentStatus(uri=DUDE4_NAME,
                                   rapps={TELEOP_RAPP, EXAMPLE_RAPP})]))
         rq = ActiveRequest(Request(
                 id=unique_id.toMsg(RQ_UUID),
-                resources=[Resource(name=EXAMPLE_RAPP,
-                                    platform_info=DUDE4_NAME),
-                           Resource(name=TELEOP_RAPP,
-                                    platform_info=DUDE2_NAME),
-                           Resource(name=TELEOP_RAPP,
-                                    platform_info=DUDE3_NAME),
-                           Resource(name=TELEOP_RAPP,
-                                    platform_info=ANY_NAME)]))
+                resources=[Resource(rapp=EXAMPLE_RAPP, uri=DUDE4_NAME),
+                           Resource(rapp=TELEOP_RAPP, uri=DUDE2_NAME),
+                           Resource(rapp=TELEOP_RAPP, uri=DUDE3_NAME),
+                           Resource(rapp=TELEOP_RAPP, uri=ANY_NAME)]))
         alloc = pool.allocate(rq)
         self.assertTrue(alloc)
         bot_names = [DUDE4_NAME, DUDE2_NAME, DUDE3_NAME, DUDE1_NAME]
         for name, i in zip(bot_names, range(4)):
             self.assertEqual(pool[name].status, CurrentStatus.ALLOCATED)
-            self.assertEqual(alloc[i].platform_info, name)
+            self.assertEqual(alloc[i].uri, name)
 
     def test_allocate_permutation_two_resources(self):
         """ Request a regexp allocation followed by an exact
@@ -161,16 +142,14 @@ class TestResourcePool(unittest.TestCase):
         allocator must try the other permutation for it to succeed.
         """
         pool = ResourcePool(KnownResources(resources=[
-                    CurrentStatus(platform_info=MARVIN_NAME,
+                    CurrentStatus(uri=MARVIN_NAME,
                                   rapps={TELEOP_RAPP, EXAMPLE_RAPP}),
-                    CurrentStatus(platform_info=ROBERTO_NAME,
+                    CurrentStatus(uri=ROBERTO_NAME,
                                   rapps={TELEOP_RAPP})]))
         rq = ActiveRequest(Request(
                 id=unique_id.toMsg(RQ_UUID),
-                resources=[Resource(name=TELEOP_RAPP,
-                                    platform_info=ANY_NAME),
-                           Resource(name=EXAMPLE_RAPP,
-                                    platform_info=MARVIN_NAME)]))
+                resources=[Resource(rapp=TELEOP_RAPP, uri=ANY_NAME),
+                           Resource(rapp=EXAMPLE_RAPP, uri=MARVIN_NAME)]))
         alloc = pool.allocate(rq)
         self.assertTrue(alloc)
         self.assertEqual(len(alloc), 2)
@@ -178,10 +157,10 @@ class TestResourcePool(unittest.TestCase):
         self.assertEqual(pool[MARVIN_NAME].owner, RQ_UUID)
         self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
         self.assertEqual(pool[ROBERTO_NAME].owner, RQ_UUID)
-        self.assertEqual(alloc[0], Resource(name=TELEOP_RAPP,
-                                            platform_info=ROBERTO_NAME))
-        self.assertEqual(alloc[1], Resource(name=EXAMPLE_RAPP,
-                                            platform_info=MARVIN_NAME))
+        self.assertEqual(alloc[0],
+                         Resource(rapp=TELEOP_RAPP, uri=ROBERTO_NAME))
+        self.assertEqual(alloc[1],
+                         Resource(rapp=EXAMPLE_RAPP, uri=MARVIN_NAME))
 
     def test_empty_constructor(self):
         pool = ResourcePool()
@@ -227,9 +206,7 @@ class TestResourcePool(unittest.TestCase):
 
     def test_match_failures(self):
         rp1 = ResourcePool(SINGLETON_POOL)
-        res = Resource(
-            name=TELEOP_RAPP,
-            platform_info=NOT_TURTLEBOT_NAME)
+        res = Resource(rapp=TELEOP_RAPP, uri=NOT_TURTLEBOT_NAME)
         subset = rp1._match_subset(res, {CurrentStatus.AVAILABLE})
         self.assertEqual(len(subset), 0)
         self.assertNotIn(MARVIN_NAME, subset)
@@ -251,9 +228,7 @@ class TestResourcePool(unittest.TestCase):
     def test_matching_allocation_one_resource(self):
         rp1 = ResourcePool(SINGLETON_POOL)
         self.assertEqual(len(rp1), 1)
-        res = Resource(
-            name=TELEOP_RAPP,
-            platform_info=ANY_NAME)
+        res = Resource(rapp=TELEOP_RAPP, uri=ANY_NAME)
         subset = rp1._match_subset(res, {CurrentStatus.AVAILABLE})
         self.assertNotIn(MARVIN_NAME, subset)
         self.assertIn(ROBERTO_NAME, subset)
@@ -271,9 +246,7 @@ class TestResourcePool(unittest.TestCase):
     def test_matching_allocation_two_resources(self):
         rp2 = ResourcePool(DOUBLETON_POOL)
         self.assertEqual(len(rp2), 2)
-        res = Resource(
-            name=TELEOP_RAPP,
-            platform_info=ANY_NAME)
+        res = Resource(rapp=TELEOP_RAPP, uri=ANY_NAME)
         subset = rp2._match_subset(res, {CurrentStatus.AVAILABLE})
         self.assertIn(MARVIN_NAME, subset)
         self.assertIn(ROBERTO_NAME, subset)
@@ -354,18 +327,18 @@ class TestPoolResource(unittest.TestCase):
     def test_constructor(self):
         res1 = PoolResource(TEST_ANOTHER)
         self.assertIsNotNone(res1)
-        self.assertEqual(res1.platform_info, TEST_ANOTHER_NAME)
+        self.assertEqual(res1.uri, TEST_ANOTHER_NAME)
         self.assertMultiLineEqual(str(res1), TEST_ANOTHER_STRING)
 
         res2 = PoolResource(TEST_STATUS)
-        self.assertEqual(res2.platform_info, TEST_RESOURCE_NAME)
+        self.assertEqual(res2.uri, TEST_RESOURCE_NAME)
         self.assertMultiLineEqual(str(res2), TEST_RESOURCE_STRING)
         self.assertNotEqual(str(res2), TEST_ANOTHER_STRING)
 
     def test_allocate(self):
         res1 = PoolResource(Resource(
-            platform_info='rocon:///linux/precise/ros/segbot/roberto',
-            name=EXAMPLE_RAPP))
+            uri='rocon:///linux/precise/ros/segbot/roberto',
+            rapp=EXAMPLE_RAPP))
         self.assertEqual(res1.status, CurrentStatus.AVAILABLE)
         self.assertEqual(res1.owner, None)
         res1.allocate(TEST_UUID)
@@ -376,31 +349,31 @@ class TestPoolResource(unittest.TestCase):
 
     def test_equality(self):
         res1 = PoolResource(Resource(
-            platform_info='linux.precise.ros.segbot.roberto',
-            name='rocon_apps/teleop'))
+            uri='linux.precise.ros.segbot.roberto',
+            rapp='rocon_apps/teleop'))
         self.assertEqual(res1, PoolResource(Resource(
-            platform_info='linux.precise.ros.segbot.roberto',
-            name='rocon_apps/teleop')))
+            uri='linux.precise.ros.segbot.roberto',
+            rapp='rocon_apps/teleop')))
 
-        # different platform_info
+        # different uri
         self.assertNotEqual(res1, PoolResource(TEST_ANOTHER))
 
         # different rapp name
         self.assertNotEqual(res1, PoolResource(Resource(
-            platform_info='linux.precise.ros.segbot.roberto',
-            name='other_package/teleop')))
+            uri='linux.precise.ros.segbot.roberto',
+            rapp='other_package/teleop')))
 
         # different owner
         res2 = PoolResource(Resource(
-            platform_info='rocon:///linux/precise/ros/segbot/roberto',
-            name='rocon_apps/teleop'))
+            uri='rocon:///linux/precise/ros/segbot/roberto',
+            rapp='rocon_apps/teleop'))
         res2.allocate(TEST_UUID)
         self.assertNotEqual(res1, res2)
 
         # different status
         res3 = PoolResource(Resource(
-            platform_info='rocon:///linux/precise/ros/segbot/roberto',
-            name='rocon_apps/teleop'))
+            uri='rocon:///linux/precise/ros/segbot/roberto',
+            rapp='rocon_apps/teleop'))
         res3.status = CurrentStatus.MISSING
         self.assertEqual(res1.owner, res3.owner)
         self.assertNotEqual(res1.status, res3.status)
@@ -409,23 +382,23 @@ class TestPoolResource(unittest.TestCase):
     def test_match(self):
         res1 = PoolResource(TEST_STATUS)
         self.assertTrue(res1.match(Resource(
-            name=EXAMPLE_RAPP,
-            platform_info=r'rocon:///linux/precise/ros/segbot/.*')))
+            rapp=EXAMPLE_RAPP,
+            uri=r'rocon:///linux/precise/ros/segbot/.*')))
         self.assertTrue(res1.match(Resource(
-            name=EXAMPLE_RAPP,
-            platform_info='linux.precise.ros.segbot.*')))
+            rapp=EXAMPLE_RAPP,
+            uri='linux.precise.ros.segbot.*')))
         self.assertTrue(res1.match(TEST_RESOURCE))
         self.assertFalse(res1.match(Resource(
-            name=EXAMPLE_RAPP,
-            platform_info='linux.precise.ros.segbot.marvin')))
+            rapp=EXAMPLE_RAPP,
+            uri='linux.precise.ros.segbot.marvin')))
         self.assertTrue(res1.match(Resource(
-            name=EXAMPLE_RAPP,
-            platform_info=r'rocon:///linux/.*/ros/(segbot|turtlebot)/.*')))
+            rapp=EXAMPLE_RAPP,
+            uri=r'rocon:///linux/.*/ros/(segbot|turtlebot)/.*')))
 
         # different rapps:
         diff_rapp = Resource(
-            name='different/rapp',
-            platform_info=r'rocon:///linux/precise/ros/segbot/.*')
+            rapp='different/rapp',
+            uri=r'rocon:///linux/precise/ros/segbot/.*')
         self.assertFalse(res1.match(diff_rapp))
         res1.rapps.add('different/rapp')
         self.assertTrue(res1.match(diff_rapp))
@@ -453,8 +426,8 @@ class TestPoolResource(unittest.TestCase):
 
     def test_release(self):
         res1 = PoolResource(Resource(
-            platform_info='rocon:///linux/precise/ros/segbot/roberto',
-            name=EXAMPLE_RAPP))
+            uri='rocon:///linux/precise/ros/segbot/roberto',
+            rapp=EXAMPLE_RAPP))
         self.assertEqual(res1.status, CurrentStatus.AVAILABLE)
         self.assertEqual(res1.owner, None)
         res1.allocate(TEST_UUID)
@@ -466,8 +439,8 @@ class TestPoolResource(unittest.TestCase):
         self.assertEqual(res1.status, CurrentStatus.AVAILABLE)
 
         res2 = PoolResource(Resource(
-            platform_info='rocon:///linux/precise/ros/segbot/roberto',
-            name=EXAMPLE_RAPP))
+            uri='rocon:///linux/precise/ros/segbot/roberto',
+            rapp=EXAMPLE_RAPP))
         res2.allocate(TEST_UUID)
         self.assertEqual(res2.status, CurrentStatus.ALLOCATED)
         res2.status = CurrentStatus.MISSING    # resource now missing
@@ -475,15 +448,15 @@ class TestPoolResource(unittest.TestCase):
         self.assertEqual(res2.status, CurrentStatus.MISSING)
 
         res3 = PoolResource(Resource(
-            platform_info='rocon:///linux/precise/ros/segbot/roberto',
-            name=EXAMPLE_RAPP))
+            uri='rocon:///linux/precise/ros/segbot/roberto',
+            rapp=EXAMPLE_RAPP))
         res3.allocate(TEST_UUID)
         res3.release()
         self.assertEqual(res3.status, CurrentStatus.AVAILABLE)
 
         res4 = PoolResource(Resource(
-            platform_info='rocon:///linux/precise/ros/segbot/roberto',
-            name=EXAMPLE_RAPP))
+            uri='rocon:///linux/precise/ros/segbot/roberto',
+            rapp=EXAMPLE_RAPP))
         res4.allocate(TEST_UUID)
         res4.status = CurrentStatus.MISSING    # resource now missing
         res4.release()
@@ -541,8 +514,8 @@ class TestResourceSet(unittest.TestCase):
         self.assertMultiLineEqual(
             str(res_set), 'ROCON resource set:\n  ' + TEST_RESOURCE_STRING)
         self.assertNotEqual(res_set, ResourceSet([Resource(
-            platform_info='rocon:///linux/precise/ros/segbot/roberto',
-            name='other_package/teleop')]))
+            uri='rocon:///linux/precise/ros/segbot/roberto',
+            rapp='other_package/teleop')]))
 
     def test_two_resource_set(self):
         res_set = ResourceSet()

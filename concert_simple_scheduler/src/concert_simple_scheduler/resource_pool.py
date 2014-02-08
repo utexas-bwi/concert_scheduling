@@ -55,8 +55,8 @@ except ImportError:
         # provide a stub for the CurrentStatus message:
         AVAILABLE, ALLOCATED, MISSING = range(3)
 
-        def __init__(self, platform_info='', rapps=[]):
-            self.platform_info = platform_info
+        def __init__(self, uri='', rapps=[]):
+            self.uri = uri
             self.rapps = rapps
             self.status = CurrentStatus.AVAILABLE
             self.owner = None
@@ -85,10 +85,10 @@ class ResourceNotOwnedError(Exception):
     pass
 
 
-def rocon_name(platform_info):
+def rocon_name(uri):
     """ Generate canonical ROCON resource name.
 
-    :param platform_info: Platform info string from a
+    :param uri: ROCON Uniform Resource Identifier from a
         :class:`.PoolResource`, ``scheduler_msgs/Resource`` message,
         or other resource representation.
 
@@ -96,19 +96,19 @@ def rocon_name(platform_info):
 
     A fully-resolved canonical name uniquely describes each resource
     within a ROCON_ Concert.  Some requests may match multiple
-    resources by embedding regular expression syntax in the name.
+    resources by embedding pattern matching syntax in the name.
 
-    If the *platform_info* is not already a ROCON name starting with
-    'rocon://', assume it may use the dotted syntax and convert shell
-    wildcard asterisks to the equivalent Python regular expression.
+    If the *uri* is not already a ROCON name starting with 'rocon:',
+    assume it may use the dotted syntax and convert shell wildcard
+    asterisks to the equivalent Python regular expression.
 
     """
-    if platform_info[0:8] == 'rocon://':
-        return platform_info            # already canonical
+    if uri[0:6] == 'rocon:':
+        return uri            # already canonical
 
     # Assume dotted representation, convert that to canonical format.
     retval = 'rocon://'
-    for part in platform_info.split('.'):
+    for part in uri.split('.'):
         if part == '*':                 # shell wildcard syntax?
             part = '\\.*'               # convert to Python RE
         retval += '/' + part
@@ -161,7 +161,7 @@ class ResourcePool(object):
                 msg = msg.resources
             for res in msg:
                 pool_res = PoolResource(res)
-                self.pool[pool_res.platform_info] = pool_res
+                self.pool[pool_res.uri] = pool_res
 
     def __contains__(self, resource_name):
         return resource_name in self.pool
@@ -250,7 +250,7 @@ class ResourcePool(object):
             for name in matches[i]:
                 if name not in names_allocated:  # still available?
                     names_allocated.add(name)
-                    alloc[i].platform_info = name
+                    alloc[i].uri = name
                     break               # go on to next resource
             else:
                 return []               # failure: no matches work
@@ -258,7 +258,7 @@ class ResourcePool(object):
         # successful: allocate to this request
         req_id = request.uuid
         for resource in alloc:
-            self.pool[resource.platform_info].allocate(req_id)
+            self.pool[resource.uri].allocate(req_id)
         return alloc                    # success
 
     def get(self, resource_name, default=None):
@@ -313,7 +313,7 @@ class ResourcePool(object):
         avail = set()
         for res in self.pool.values():
             if (res.status in criteria and res.match(resource_msg)):
-                avail.add(res.platform_info)
+                avail.add(res.uri)
         return avail
 
     def release_request(self, request):
@@ -326,7 +326,7 @@ class ResourcePool(object):
         """
         rq_id = request.uuid
         for res in request.allocations:
-            self.pool[res.platform_info].release(rq_id)
+            self.pool[res.uri].release(rq_id)
 
     def release_resources(self, resources):
         """ Release a list of *resources*.
@@ -337,7 +337,7 @@ class ResourcePool(object):
         they cannot be assigned to a request for some reason.
         """
         for res in resources:
-            pool_res = self.pool[res.platform_info]
+            pool_res = self.pool[res.uri]
             pool_res.release()
 
 
@@ -371,14 +371,14 @@ class PoolResource:
     """
     def __init__(self, msg):
         """ Constructor. """
-        self.platform_info = rocon_name(msg.platform_info)
+        self.uri = rocon_name(msg.uri)
         """ Fully-resolved canonical ROCON resource name. """
         try:
             self.rapps = set(msg.rapps)
             """ The :class:`set` of ROCON application name strings
             this platform advertises. """
         except AttributeError:
-            self.rapps = set([msg.name])
+            self.rapps = set([msg.rapp])
         self.owner = None
         """ :class:`uuid.UUID` of request to which this resource is
         currently assigned, or ``None``.
@@ -387,7 +387,7 @@ class PoolResource:
         """ Current status of this resource. """
 
     def __eq__(self, other):
-        if self.platform_info != other.platform_info:
+        if self.uri != other.uri:
             return False
         if self.rapps != other.rapps:
             return False                # different rapps advertised
@@ -398,7 +398,7 @@ class PoolResource:
         return True
 
     def __hash__(self):
-        return hash(self.platform_info)
+        return hash(self.uri)
 
     def __ne__(self, other):
         return not self == other
@@ -407,7 +407,7 @@ class PoolResource:
         rappstr = ''
         for rapp_name in self.rapps:
             rappstr += '\n    ' + str(rapp_name)
-        return (self.platform_info + ', status: ' + str(self.status)
+        return (self.uri + ', status: ' + str(self.status)
                 + '\n  owner: ' + str(self.owner)
                 + '\n  rapps:' + rappstr)
 
@@ -421,7 +421,7 @@ class PoolResource:
         """
         if (self.status != CurrentStatus.AVAILABLE):
             raise ResourceNotAvailableError('resource not available: '
-                                            + self.platform_info)
+                                            + self.uri)
         assert self.owner is None
         self.owner = request_id
         self.status = CurrentStatus.ALLOCATED
@@ -433,17 +433,17 @@ class PoolResource:
         :type res: ``scheduler_msgs/Resource`` or :class:`.PoolResource`
         :returns: ``True`` if this specific resource matches.
 
-        To match, the *res.name* must be one of the rapps advertised
-        by this ROCON resource.  The *res.platform_info* may include
-        Python regular expression syntax for matching multiple
-        resource names.
+        To match, the *res.rapp* must be one of the rapps advertised
+        by this ROCON resource.  The *res.uri* may include Python
+        regular expression syntax for matching multiple resource
+        names.
 
-        If the *res.platform_info* is not a canonical ROCON name
-        starting with 'rocon://', it will be converted from shell
-        wildcard syntax into an equivalent Python regular expression.
+        If the *res.uri* is not a canonical ROCON name starting with
+        'rocon:', it will be converted from shell wildcard syntax into
+        an equivalent Python regular expression.
 
         """
-        return self.match_pattern(rocon_name(res.platform_info), res.name)
+        return self.match_pattern(rocon_name(res.uri), res.rapp)
 
     def match_pattern(self, pattern, rapp):
         """ Match this resource to a ROCON name and application.
@@ -462,7 +462,7 @@ class PoolResource:
         """
         if rapp not in self.rapps:      # rapp not advertised here?
             return False
-        return re.match(pattern, self.platform_info)
+        return re.match(pattern, self.uri)
 
     def release(self, request_id=None):
         """ Release this resource.
@@ -475,8 +475,7 @@ class PoolResource:
         """
         if (request_id is not None and self.owner != request_id):
             raise ResourceNotOwnedError('resource not owned by '
-                                        + str(request_id) + ': '
-                                        + self.platform_info)
+                                        + str(request_id) + ': ' + self.uri)
         self.owner = None
         if self.status == CurrentStatus.ALLOCATED:  # not gone missing?
             self.status = CurrentStatus.AVAILABLE
