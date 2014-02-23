@@ -107,10 +107,10 @@ def rocon_name(uri):
         return uri            # already canonical
 
     # Assume dotted representation, convert that to canonical format.
-    retval = 'rocon://'
+    retval = 'rocon:'
     for part in uri.split('.'):
         if part == '*':                 # shell wildcard syntax?
-            part = '\\.*'               # convert to Python RE
+            part = '.*'                 # convert to Python RE
         retval += '/' + part
     return retval
 

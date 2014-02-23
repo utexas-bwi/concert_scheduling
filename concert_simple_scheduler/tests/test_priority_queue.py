@@ -22,9 +22,9 @@ RQR_ID = uuid.uuid4()
 RQ1_UUID = uuid.uuid4()
 RQ2_UUID = uuid.uuid4()
 EXAMPLE_RAPP = 'tests/example_rapp'
-MARVIN_NAME = 'rocon:///linux/precise/ros/turtlebot/marvin'
+MARVIN_NAME = 'rocon:/turtlebot/marvin'
 MARVIN = Resource(uri=MARVIN_NAME, rapp=EXAMPLE_RAPP)
-ROBERTO_NAME = 'rocon:///linux/precise/ros/turtlebot/roberto'
+ROBERTO_NAME = 'rocon:/turtlebot/roberto'
 ROBERTO = Resource(uri=ROBERTO_NAME, rapp=EXAMPLE_RAPP)
 
 # some useful Resource and Request messages
