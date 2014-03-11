@@ -27,7 +27,7 @@ DIFF_UUID = unique_id.fromURL('package://concert_simple_scheduler/diff_uuid')
 
 EXAMPLE_RAPP = 'tests/example_rapp'
 TELEOP_RAPP = 'rocon_apps/teleop'
-TEST_RAPPS = set((TELEOP_RAPP, EXAMPLE_RAPP))
+TEST_RAPPS = [TELEOP_RAPP, EXAMPLE_RAPP]
 
 TEST_STATUS = CurrentStatus(uri='rocon:/segbot/roberto', rapps=[EXAMPLE_RAPP])
 TEST_RESOURCE = Resource(uri='rocon:/segbot/roberto', rapp=EXAMPLE_RAPP)
@@ -166,30 +166,31 @@ class TestResourcePool(unittest.TestCase):
         self.assertEqual(len(pool), 0)
         self.assertNotIn(MARVIN_NAME, pool)
         self.assertMultiLineEqual(str(pool), 'pool contents:')
+        self.assertEqual(pool.known_resources(), KnownResources())
 
     def test_exact_resource_allocation(self):
-        rp2 = ResourcePool(DOUBLETON_POOL)
-        self.assertEqual(len(rp2), 2)
+        pool = ResourcePool(DOUBLETON_POOL)
+        self.assertEqual(len(pool), 2)
         res = copy.deepcopy(ROBERTO_RESOURCE)
-        subset = rp2._match_subset(res, {CurrentStatus.AVAILABLE})
+        subset = pool._match_subset(res, {CurrentStatus.AVAILABLE})
         self.assertIn(ROBERTO_NAME, subset)
         self.assertEqual(subset, set([ROBERTO_NAME]))
-        self.assertEqual(rp2.match_list([ROBERTO_RESOURCE],
+        self.assertEqual(pool.match_list([ROBERTO_RESOURCE],
                                         {CurrentStatus.AVAILABLE}),
                          [set([ROBERTO_NAME])])
         rq = copy.deepcopy(ROBERTO_REQUEST)
-        alloc = rp2.allocate(rq)
+        alloc = pool.allocate(rq)
         self.assertTrue(alloc)
         self.assertEqual(alloc[0], ROBERTO_RESOURCE)
-        self.assertEqual(rp2[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
-        self.assertEqual(rp2[ROBERTO_NAME].owner, RQ_UUID)
+        self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
+        self.assertEqual(pool[ROBERTO_NAME].owner, RQ_UUID)
 
     def test_get_method(self):
-        rp2 = ResourcePool(DOUBLETON_POOL)
-        self.assertEqual(rp2.get(ROBERTO_NAME), PoolResource(ROBERTO))
-        self.assertEqual(rp2.get(MARVIN_NAME, 3.14), PoolResource(MARVIN))
-        self.assertIsNone(rp2.get(ANY_NAME))
-        self.assertEqual(rp2.get(ANY_NAME, 3.14), 3.14)
+        pool = ResourcePool(DOUBLETON_POOL)
+        self.assertEqual(pool.get(ROBERTO_NAME), PoolResource(ROBERTO))
+        self.assertEqual(pool.get(MARVIN_NAME, 3.14), PoolResource(MARVIN))
+        self.assertIsNone(pool.get(ANY_NAME))
+        self.assertEqual(pool.get(ANY_NAME, 3.14), 3.14)
 
     def test_insufficient_resources(self):
         # ask for two when there's only one
@@ -242,27 +243,27 @@ class TestResourcePool(unittest.TestCase):
         self.assertEqual(rp1[ROBERTO_NAME].owner, RQ_UUID)
 
     def test_matching_allocation_two_resources(self):
-        rp2 = ResourcePool(DOUBLETON_POOL)
-        self.assertEqual(len(rp2), 2)
+        pool = ResourcePool(DOUBLETON_POOL)
+        self.assertEqual(len(pool), 2)
         res = Resource(rapp=TELEOP_RAPP, uri=ANY_NAME)
-        subset = rp2._match_subset(res, {CurrentStatus.AVAILABLE})
+        subset = pool._match_subset(res, {CurrentStatus.AVAILABLE})
         self.assertIn(MARVIN_NAME, subset)
         self.assertIn(ROBERTO_NAME, subset)
         self.assertEqual(subset, set([MARVIN_NAME, ROBERTO_NAME]))
-        self.assertEqual(rp2.match_list([ROBERTO_RESOURCE],
+        self.assertEqual(pool.match_list([ROBERTO_RESOURCE],
                                         {CurrentStatus.AVAILABLE}),
                          [set([ROBERTO_NAME])])
         rq = copy.deepcopy(ANY_REQUEST)
-        alloc = rp2.allocate(rq)
+        alloc = pool.allocate(rq)
         self.assertTrue(alloc)
         if alloc[0] == MARVIN_RESOURCE:
-            self.assertEqual(rp2[MARVIN_NAME].status,
+            self.assertEqual(pool[MARVIN_NAME].status,
                              CurrentStatus.ALLOCATED)
-            self.assertEqual(rp2[MARVIN_NAME].owner, RQ_UUID)
+            self.assertEqual(pool[MARVIN_NAME].owner, RQ_UUID)
         elif alloc[0] == ROBERTO_RESOURCE:
-            self.assertEqual(rp2[ROBERTO_NAME].status,
+            self.assertEqual(pool[ROBERTO_NAME].status,
                              CurrentStatus.ALLOCATED)
-            self.assertEqual(rp2[ROBERTO_NAME].owner, RQ_UUID)
+            self.assertEqual(pool[ROBERTO_NAME].owner, RQ_UUID)
         else:
             self.fail('allocation failed to yield any expected result')
 
@@ -274,42 +275,44 @@ class TestResourcePool(unittest.TestCase):
         self.assertMultiLineEqual(
             str(pool),
             'pool contents:\n  ' + str(PoolResource(ROBERTO)))
+        self.assertEqual(pool.known_resources(), SINGLETON_POOL)
 
     def test_release_one_resource(self):
-        rp2 = ResourcePool(DOUBLETON_POOL)
-        self.assertEqual(len(rp2), 2)
-        self.assertEqual(rp2[ROBERTO_NAME].status, CurrentStatus.AVAILABLE)
+        pool = ResourcePool(DOUBLETON_POOL)
+        self.assertEqual(len(pool), 2)
+        self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.AVAILABLE)
 
         rq = copy.deepcopy(ROBERTO_REQUEST)
-        alloc = rp2.allocate(rq)
+        alloc = pool.allocate(rq)
         self.assertTrue(alloc)
         rq.grant(alloc)
-        self.assertEqual(rp2[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
-        self.assertEqual(rp2[ROBERTO_NAME].owner, RQ_UUID)
+        self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
+        self.assertEqual(pool[ROBERTO_NAME].owner, RQ_UUID)
 
-        rp2.release_request(rq)
-        self.assertEqual(rp2[ROBERTO_NAME].status, CurrentStatus.AVAILABLE)
-        self.assertEqual(rp2[ROBERTO_NAME].owner, None)
+        pool.release_request(rq)
+        self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.AVAILABLE)
+        self.assertEqual(pool[ROBERTO_NAME].owner, None)
 
     def test_release_one_resource_list(self):
-        rp2 = ResourcePool(DOUBLETON_POOL)
-        self.assertEqual(rp2[ROBERTO_NAME].status, CurrentStatus.AVAILABLE)
+        pool = ResourcePool(DOUBLETON_POOL)
+        self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.AVAILABLE)
 
         rq = copy.deepcopy(ROBERTO_REQUEST)
-        alloc = rp2.allocate(rq)
+        alloc = pool.allocate(rq)
         self.assertTrue(alloc)
-        self.assertEqual(rp2[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
-        self.assertEqual(rp2[ROBERTO_NAME].owner, RQ_UUID)
+        self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
+        self.assertEqual(pool[ROBERTO_NAME].owner, RQ_UUID)
 
-        rp2.release_resources(alloc)
-        self.assertEqual(rp2[ROBERTO_NAME].status, CurrentStatus.AVAILABLE)
-        self.assertEqual(rp2[ROBERTO_NAME].owner, None)
+        pool.release_resources(alloc)
+        self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.AVAILABLE)
+        self.assertEqual(pool[ROBERTO_NAME].owner, None)
 
     def test_two_resource_constructor(self):
-        rp2 = ResourcePool(DOUBLETON_POOL)
-        self.assertEqual(len(rp2), 2)
-        self.assertIn(ROBERTO_NAME, rp2)
-        self.assertIn(MARVIN_NAME, rp2)
+        pool = ResourcePool(DOUBLETON_POOL)
+        self.assertEqual(len(pool), 2)
+        self.assertIn(ROBERTO_NAME, pool)
+        self.assertIn(MARVIN_NAME, pool)
+        self.assertEqual(pool.known_resources(), DOUBLETON_POOL)
 
 
 class TestPoolResource(unittest.TestCase):

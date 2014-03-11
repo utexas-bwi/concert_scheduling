@@ -277,7 +277,8 @@ class ResourcePool(object):
     def known_resources(self):
         """ Convert resource pool to ``scheduler_msgs/KnownResources``. """
         msg = KnownResources()
-        # stub implementation
+        for resource in self.pool.values():
+            msg.resources.append(resource.current_status())
         self.changed = False
         return msg
 
@@ -443,6 +444,16 @@ class PoolResource:
         assert self.owner is None
         self.owner = request_id
         self.status = CurrentStatus.ALLOCATED
+
+    def current_status(self):
+        """ :returns: ``scheduler_msgs/CurrentStatus`` for this resource. """
+        msg = CurrentStatus(uri=self.uri, status=self.status,
+                            rapps=list(self.rapps))
+        if self.status == CurrentStatus.ALLOCATED:
+            msg.owner = self.owner
+            if hasattr(msg, 'priority'):
+                msg.priority = self.priority
+        return msg
 
     def match(self, res):
         """ Match this resource to a requested one.

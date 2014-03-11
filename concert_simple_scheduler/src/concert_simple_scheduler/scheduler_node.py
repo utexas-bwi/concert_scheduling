@@ -131,8 +131,12 @@ class SimpleSchedulerNode(object):
                 self.pool.release_resources(resources)
             self.notification_set.add(elem.requester_id)
 
-        # finally, notify all affected requesters
+        # notify all affected requesters
         self.notify_requesters()
+
+        # update resource_pool topic, if anything changed
+        if self.pool.changed:
+            self.pub_pool.publish(self.pool.known_resources())
 
     def free(self, request, requester_id):
         """ Free all resources allocated for this *request*.
@@ -164,11 +168,6 @@ class SimpleSchedulerNode(object):
                 # shut down this requester
                 self.shutdown_requester(requester_id)
         self.notification_set.clear()
-
-    def publish_resource_pool(self):
-        """ Publish resource pool contents, if there are any changes. """
-        if self.pool.changed:
-            self.pub_pool.publish(self.pool.known_resources())
 
     def queue(self, request, requester_id):
         """ Add *request* to ready queue, making it wait.
