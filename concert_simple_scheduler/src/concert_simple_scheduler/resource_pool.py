@@ -132,19 +132,20 @@ class ResourcePool(object):
 
        :returns: The number of resources in the pool.
 
-    .. describe:: pool[name]
+    .. describe:: pool[uri]
 
-       :param name: (str) The *name* of a resource in the *pool*.
-       :returns: The :class:`.PoolResource` corresponding to *name*.
-       :raises: :exc:`KeyError` if *name* not in the *pool*.
+       :param uri: (str) The Uniform Resource Identifier of a resource
+           in the *pool*.
+       :returns: The :class:`.PoolResource` corresponding to *uri*.
+       :raises: :exc:`KeyError` if *uri* not in the *pool*.
 
-    .. describe:: resource_name in pool
+    .. describe:: uri in pool
 
-       :returns: ``True`` if *pool* contains *resource_name*, else ``False``.
+       :returns: ``True`` if *pool* contains *uri*, else ``False``.
 
-    .. describe:: resource_name not in pool
+    .. describe:: uri not in pool
 
-       Equivalent to ``not resource_name in pool``.
+       Equivalent to ``not uri in pool``.
 
     .. describe:: str(pool)
 
@@ -167,11 +168,11 @@ class ResourcePool(object):
                 pool_res = PoolResource(res)
                 self.pool[pool_res.uri] = pool_res
 
-    def __contains__(self, resource_name):
-        return resource_name in self.pool
+    def __contains__(self, uri):
+        return uri in self.pool
 
-    def __getitem__(self, name):
-        return self.pool[name]
+    def __getitem__(self, uri):
+        return self.pool[uri]
 
     def __len__(self):
         return len(self.pool)
@@ -360,16 +361,27 @@ class ResourcePool(object):
 
         :param client_list: current list of ``ConcertClient`` messages.
         """
+        clients_found = set()
         for client in client_list:
-            rospy.loginfo(str(client))
+            uri = client.platform_info.uri
+            clients_found.add(uri)
+            if uri not in self.pool:    # not previously-known?
+                self.pool[uri] = PoolResource(client)
+                self.changed = True
+
+        # previously-known resources not in clients_found are missing
+        missing_clients = set(self.pool.keys())-clients_found
+        for uri in missing_clients:
+            self.pool[uri].status = CurrentStatus.MISSING
+            self.changed = True
 
 
 class PoolResource:
     """
     Class for tracking the status of a single ROCON_ resource.
 
-    :param msg: ROCON scheduler resource message.
-    :type msg: scheduler_msgs/CurrentStatus or scheduler_msgs/Resource
+    :param msg: ROCON scheduler resource description message.
+    :type msg: ``ConcertClient``, ``CurrentStatus`` or ``Resource``
 
     .. describe:: hash(res)
 
@@ -394,20 +406,26 @@ class PoolResource:
     """
     def __init__(self, msg):
         """ Constructor. """
-        self.uri = rocon_name(msg.uri)
-        """ Fully-resolved canonical ROCON resource name. """
         try:
-            self.rapps = set(msg.rapps)
+            self.uri = rocon_name(msg.platform_info.uri)
+            """ Fully-resolved canonical ROCON resource name. """
+        except AttributeError:          # not a ConcertClient message?
+            self.uri = rocon_name(msg.uri)
+        try:
+            self.rapps = set(msg.apps)
             """ The :class:`set` of ROCON application name strings
             this platform advertises. """
-        except AttributeError:
-            self.rapps = set([msg.rapp])
+        except AttributeError:          # not a ConcertClient message?
+            if hasattr(msg, 'rapps'):   # CurrentStatus message?
+                self.rapps = set(msg.rapps)
+            else:                       # Resource message
+                self.rapps = set([msg.rapp])
+        self.status = CurrentStatus.AVAILABLE
+        """ Current status of this resource. """
         self.owner = None
         """ :class:`uuid.UUID` of request to which this resource is
         currently assigned, or ``None``.
         """
-        self.status = CurrentStatus.AVAILABLE
-        """ Current status of this resource. """
         self.priority = 0
         """ Priority of request to which this resource is currently
         assigned. """
@@ -513,6 +531,7 @@ class PoolResource:
             raise ResourceNotOwnedError('resource not owned by '
                                         + str(request_id) + ': ' + self.uri)
         self.owner = None
+        self.priority = 0               # no longer applicable
         if self.status == CurrentStatus.ALLOCATED:  # not gone missing?
             self.status = CurrentStatus.AVAILABLE
 

@@ -10,6 +10,8 @@ import unittest
 
 # ROS dependencies
 import unique_id
+from rocon_std_msgs.msg import PlatformInfo
+from concert_msgs.msg import ConcertClient
 from scheduler_msgs.msg import Request, Resource
 try:
     from scheduler_msgs.msg import CurrentStatus, KnownResources
@@ -30,8 +32,8 @@ TELEOP_RAPP = 'rocon_apps/teleop'
 TEST_RAPPS = [TELEOP_RAPP, EXAMPLE_RAPP]
 
 TEST_STATUS = CurrentStatus(uri='rocon:/segbot/roberto', rapps=[EXAMPLE_RAPP])
-TEST_RESOURCE = Resource(uri='rocon:/segbot/roberto', rapp=EXAMPLE_RAPP)
 TEST_RESOURCE_NAME = 'rocon:/segbot/roberto'
+TEST_RESOURCE = Resource(uri=TEST_RESOURCE_NAME, rapp=EXAMPLE_RAPP)
 TEST_RESOURCE_STRING = (
     """rocon:/segbot/roberto, status: 0
   owner: None
@@ -168,6 +170,16 @@ class TestResourcePool(unittest.TestCase):
         self.assertMultiLineEqual(str(pool), 'pool contents:')
         self.assertTrue(pool.changed)
         self.assertEqual(pool.known_resources(), KnownResources())
+        self.assertFalse(pool.changed)
+
+    def test_empty_update(self):
+        pool = ResourcePool()
+        self.assertEqual(len(pool), 0)
+        self.assertTrue(pool.changed)
+        self.assertEqual(pool.known_resources(), KnownResources())
+        self.assertFalse(pool.changed)
+        pool.update([])
+        self.assertEqual(len(pool), 0)
         self.assertFalse(pool.changed)
 
     def test_exact_resource_allocation(self):
@@ -347,6 +359,36 @@ class TestResourcePool(unittest.TestCase):
         self.assertIn(MARVIN_NAME, pool)
         self.assertTrue(pool.changed)
         self.assertEqual(pool.known_resources(), DOUBLETON_POOL)
+        self.assertFalse(pool.changed)
+
+    def test_one_missing_update(self):
+        pool = ResourcePool(SINGLETON_POOL)
+        self.assertEqual(len(pool), 1)
+        self.assertIn(ROBERTO_NAME, pool)
+        self.assertTrue(pool.changed)
+        self.assertEqual(pool.known_resources(), SINGLETON_POOL)
+        self.assertFalse(pool.changed)
+        pool.update([])
+        self.assertEqual(len(pool), 1)
+        self.assertIn(ROBERTO_NAME, pool)
+        self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.MISSING)
+        self.assertTrue(pool.changed)
+
+    def test_one_update(self):
+        pool = ResourcePool()
+        self.assertEqual(len(pool), 0)
+        self.assertTrue(pool.changed)
+        self.assertEqual(pool.known_resources(), KnownResources())
+        self.assertFalse(pool.changed)
+        pool.update([
+                ConcertClient(
+                    name='roberto',
+                    platform_info=PlatformInfo(uri=ROBERTO_NAME),
+                    apps=TEST_RAPPS)])
+        self.assertEqual(len(pool), 1)
+        self.assertIn(ROBERTO_NAME, pool)
+        self.assertTrue(pool.changed)
+        self.assertEqual(pool.known_resources(), SINGLETON_POOL)
         self.assertFalse(pool.changed)
 
 

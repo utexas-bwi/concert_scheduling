@@ -248,7 +248,7 @@ class SimpleSchedulerNode(object):
         operations done within the scheduler callback thread.
         """
         with self.sch.lock:
-            self.pool.update(msg.clients + msg.univited_clients)
+            self.pool.update(msg.clients)
 
 
 def main():
