@@ -44,6 +44,8 @@ ROCON services.
 """
 import rospy
 from rocon_scheduler_requests import Scheduler, TransitionError
+from concert_msgs.msg import ConcertClients
+from scheduler_msgs.msg import KnownResources
 from scheduler_msgs.msg import Request
 
 from .resource_pool import ResourcePool
@@ -65,6 +67,12 @@ class SimpleSchedulerNode(object):
         """ Constructor. """
         rospy.init_node(node_name)
         self.pool = ResourcePool()
+        self.pub_pool = rospy.Publisher('resource_pool', KnownResources,
+                                        queue_size=1, latch=True)
+        self.pub_pool.publish(self.pool.known_resources())
+        self.sub_client = rospy.Subscriber('concert_client_changes',
+                                           ConcertClients, self.track_clients,
+                                           queue_size=1, tcp_nodelay=True)
         self.ready_queue = PriorityQueue()
         """ Queue of waiting requests. """
         self.blocked_queue = PriorityQueue()
@@ -157,6 +165,11 @@ class SimpleSchedulerNode(object):
                 self.shutdown_requester(requester_id)
         self.notification_set.clear()
 
+    def publish_resource_pool(self):
+        """ Publish resource pool contents, if there are any changes. """
+        if self.pool.changed:
+            self.pub_pool.publish(self.pool.known_resources())
+
     def queue(self, request, requester_id):
         """ Add *request* to ready queue, making it wait.
 
@@ -225,6 +238,18 @@ class SimpleSchedulerNode(object):
             for rq in queue:
                 if rq.requester_id == requester_id:
                     self.free(rq, requester_id)
+
+    def track_clients(self, msg):
+        """ Concert clients message callback.
+
+        Updates the resource pool based on client changes published by
+        the concert conductor.
+
+        Uses the Big Scheduler Lock to serialize changes with
+        operations done within the scheduler callback thread.
+        """
+        with self.sch.lock:
+            self.pool.update(msg.clients + msg.univited_clients)
 
 
 def main():

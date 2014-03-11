@@ -156,6 +156,9 @@ class ResourcePool(object):
         """ Dictionary of known :class:`.PoolResource` objects,
         indexed by the fully-resolved ROCON resource name.
         """
+        self.changed = True
+        """ True, if resource pool has changed since the previous
+        known_resources() call. """
         if msg is not None:
             if hasattr(msg, 'resources'):
                 msg = msg.resources
@@ -271,6 +274,13 @@ class ResourcePool(object):
         """
         return self.pool.get(resource_name, default)
 
+    def known_resources(self):
+        """ Convert resource pool to ``scheduler_msgs/KnownResources``. """
+        msg = KnownResources()
+        # stub implementation
+        self.changed = False
+        return msg
+
     def match_list(self, resources, criteria):
         """
         Make a list containing sets of the available resources
@@ -339,6 +349,14 @@ class ResourcePool(object):
         for res in resources:
             pool_res = self.pool[res.uri]
             pool_res.release()
+
+    def update(self, client_list):
+        """ Update resource pool from a new concert clients list.
+
+        :param client_list: current list of ``ConcertClient`` messages.
+        """
+        for client in client_list:
+            rospy.loginfo(str(client))
 
 
 class PoolResource:
