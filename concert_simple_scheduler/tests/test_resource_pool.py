@@ -299,6 +299,19 @@ class TestResourcePool(unittest.TestCase):
         else:
             self.fail('allocation failed to yield any expected result')
 
+    def test_one_missing_update(self):
+        pool = ResourcePool(SINGLETON_POOL)
+        self.assertEqual(len(pool), 1)
+        self.assertIn(ROBERTO_NAME, pool)
+        self.assertTrue(pool.changed)
+        self.assertEqual(pool.known_resources(), SINGLETON_POOL)
+        self.assertFalse(pool.changed)
+        pool.update([])
+        self.assertEqual(len(pool), 1)
+        self.assertIn(ROBERTO_NAME, pool)
+        self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.MISSING)
+        self.assertTrue(pool.changed)
+
     def test_one_resource_constructor(self):
         pool = ResourcePool(SINGLETON_POOL)
         self.assertEqual(len(pool), 1)
@@ -307,6 +320,23 @@ class TestResourcePool(unittest.TestCase):
         self.assertMultiLineEqual(
             str(pool),
             'pool contents:\n  ' + str(PoolResource(ROBERTO)))
+        self.assertTrue(pool.changed)
+        self.assertEqual(pool.known_resources(), SINGLETON_POOL)
+        self.assertFalse(pool.changed)
+
+    def test_one_update(self):
+        pool = ResourcePool()
+        self.assertEqual(len(pool), 0)
+        self.assertTrue(pool.changed)
+        self.assertEqual(pool.known_resources(), KnownResources())
+        self.assertFalse(pool.changed)
+        pool.update([
+                ConcertClient(
+                    name='roberto',
+                    platform_info=PlatformInfo(uri=ROBERTO_NAME),
+                    apps=TEST_RAPPS)])
+        self.assertEqual(len(pool), 1)
+        self.assertIn(ROBERTO_NAME, pool)
         self.assertTrue(pool.changed)
         self.assertEqual(pool.known_resources(), SINGLETON_POOL)
         self.assertFalse(pool.changed)
@@ -359,36 +389,6 @@ class TestResourcePool(unittest.TestCase):
         self.assertIn(MARVIN_NAME, pool)
         self.assertTrue(pool.changed)
         self.assertEqual(pool.known_resources(), DOUBLETON_POOL)
-        self.assertFalse(pool.changed)
-
-    def test_one_missing_update(self):
-        pool = ResourcePool(SINGLETON_POOL)
-        self.assertEqual(len(pool), 1)
-        self.assertIn(ROBERTO_NAME, pool)
-        self.assertTrue(pool.changed)
-        self.assertEqual(pool.known_resources(), SINGLETON_POOL)
-        self.assertFalse(pool.changed)
-        pool.update([])
-        self.assertEqual(len(pool), 1)
-        self.assertIn(ROBERTO_NAME, pool)
-        self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.MISSING)
-        self.assertTrue(pool.changed)
-
-    def test_one_update(self):
-        pool = ResourcePool()
-        self.assertEqual(len(pool), 0)
-        self.assertTrue(pool.changed)
-        self.assertEqual(pool.known_resources(), KnownResources())
-        self.assertFalse(pool.changed)
-        pool.update([
-                ConcertClient(
-                    name='roberto',
-                    platform_info=PlatformInfo(uri=ROBERTO_NAME),
-                    apps=TEST_RAPPS)])
-        self.assertEqual(len(pool), 1)
-        self.assertIn(ROBERTO_NAME, pool)
-        self.assertTrue(pool.changed)
-        self.assertEqual(pool.known_resources(), SINGLETON_POOL)
         self.assertFalse(pool.changed)
 
 
