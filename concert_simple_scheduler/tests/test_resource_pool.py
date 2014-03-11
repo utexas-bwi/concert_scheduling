@@ -166,11 +166,17 @@ class TestResourcePool(unittest.TestCase):
         self.assertEqual(len(pool), 0)
         self.assertNotIn(MARVIN_NAME, pool)
         self.assertMultiLineEqual(str(pool), 'pool contents:')
+        self.assertTrue(pool.changed)
         self.assertEqual(pool.known_resources(), KnownResources())
+        self.assertFalse(pool.changed)
 
     def test_exact_resource_allocation(self):
         pool = ResourcePool(DOUBLETON_POOL)
         self.assertEqual(len(pool), 2)
+        self.assertTrue(pool.changed)
+        self.assertEqual(pool.known_resources(), DOUBLETON_POOL)
+        self.assertFalse(pool.changed)
+
         res = copy.deepcopy(ROBERTO_RESOURCE)
         subset = pool._match_subset(res, {CurrentStatus.AVAILABLE})
         self.assertIn(ROBERTO_NAME, subset)
@@ -178,8 +184,11 @@ class TestResourcePool(unittest.TestCase):
         self.assertEqual(pool.match_list([ROBERTO_RESOURCE],
                                         {CurrentStatus.AVAILABLE}),
                          [set([ROBERTO_NAME])])
+
+        self.assertFalse(pool.changed)
         rq = copy.deepcopy(ROBERTO_REQUEST)
         alloc = pool.allocate(rq)
+        self.assertTrue(pool.changed)
         self.assertTrue(alloc)
         self.assertEqual(alloc[0], ROBERTO_RESOURCE)
         self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
@@ -204,43 +213,54 @@ class TestResourcePool(unittest.TestCase):
         self.assertIsNone(pool[ROBERTO_NAME].owner)
 
     def test_match_failures(self):
-        rp1 = ResourcePool(SINGLETON_POOL)
+        pool = ResourcePool(SINGLETON_POOL)
         res = Resource(rapp=TELEOP_RAPP, uri=NOT_TURTLEBOT_NAME)
-        subset = rp1._match_subset(res, {CurrentStatus.AVAILABLE})
+        subset = pool._match_subset(res, {CurrentStatus.AVAILABLE})
         self.assertEqual(len(subset), 0)
         self.assertNotIn(MARVIN_NAME, subset)
         self.assertNotIn(ROBERTO_NAME, subset)
         self.assertEqual(subset, set())
         # test null resources list:
-        match_null = rp1.match_list([], {CurrentStatus.AVAILABLE})
+        match_null = pool.match_list([], {CurrentStatus.AVAILABLE})
         self.assertEqual(match_null, [])
         self.assertFalse(match_null)
         # test not matching resource:
-        matches = rp1.match_list([NOT_TURTLEBOT_RESOURCE],
+        matches = pool.match_list([NOT_TURTLEBOT_RESOURCE],
                                  {CurrentStatus.AVAILABLE})
         self.assertEqual(matches, [])
         self.assertFalse(matches)
         rq = copy.deepcopy(NOT_TURTLEBOT_REQUEST)
-        alloc = rp1.allocate(rq)
+        alloc = pool.allocate(rq)
         self.assertFalse(alloc)
 
     def test_matching_allocation_one_resource(self):
-        rp1 = ResourcePool(SINGLETON_POOL)
-        self.assertEqual(len(rp1), 1)
+        pool = ResourcePool(SINGLETON_POOL)
+        self.assertEqual(len(pool), 1)
+        self.assertEqual(pool.known_resources(), SINGLETON_POOL)
+        self.assertFalse(pool.changed)
         res = Resource(rapp=TELEOP_RAPP, uri=ANY_NAME)
-        subset = rp1._match_subset(res, {CurrentStatus.AVAILABLE})
+        subset = pool._match_subset(res, {CurrentStatus.AVAILABLE})
         self.assertNotIn(MARVIN_NAME, subset)
         self.assertIn(ROBERTO_NAME, subset)
         self.assertEqual(subset, set([ROBERTO_NAME]))
-        self.assertEqual(rp1.match_list([ROBERTO_RESOURCE],
+        self.assertEqual(pool.match_list([ROBERTO_RESOURCE],
                                         {CurrentStatus.AVAILABLE}),
                          [set([ROBERTO_NAME])])
         rq = copy.deepcopy(ANY_REQUEST)
-        alloc = rp1.allocate(rq)
+        alloc = pool.allocate(rq)
         self.assertTrue(alloc)
+        self.assertTrue(pool.changed)
         self.assertEqual(alloc[0], ROBERTO_RESOURCE)
-        self.assertEqual(rp1[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
-        self.assertEqual(rp1[ROBERTO_NAME].owner, RQ_UUID)
+        self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
+        self.assertEqual(pool[ROBERTO_NAME].owner, RQ_UUID)
+        self.assertTrue(pool.changed)
+        self.assertEqual(
+            pool.known_resources(), 
+            KnownResources(resources=[
+                    CurrentStatus(uri=ROBERTO_NAME, rapps=TEST_RAPPS,
+                                  status=CurrentStatus.ALLOCATED,
+                                  owner=RQ_UUID)]))
+        self.assertFalse(pool.changed)
 
     def test_matching_allocation_two_resources(self):
         pool = ResourcePool(DOUBLETON_POOL)
@@ -275,12 +295,17 @@ class TestResourcePool(unittest.TestCase):
         self.assertMultiLineEqual(
             str(pool),
             'pool contents:\n  ' + str(PoolResource(ROBERTO)))
+        self.assertTrue(pool.changed)
         self.assertEqual(pool.known_resources(), SINGLETON_POOL)
+        self.assertFalse(pool.changed)
 
     def test_release_one_resource(self):
         pool = ResourcePool(DOUBLETON_POOL)
         self.assertEqual(len(pool), 2)
         self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.AVAILABLE)
+        self.assertTrue(pool.changed)
+        self.assertEqual(pool.known_resources(), DOUBLETON_POOL)
+        self.assertFalse(pool.changed)
 
         rq = copy.deepcopy(ROBERTO_REQUEST)
         alloc = pool.allocate(rq)
@@ -289,9 +314,17 @@ class TestResourcePool(unittest.TestCase):
         self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.ALLOCATED)
         self.assertEqual(pool[ROBERTO_NAME].owner, RQ_UUID)
 
+        self.assertTrue(pool.changed)
+        x = pool.known_resources()
+        self.assertFalse(pool.changed)
+
         pool.release_request(rq)
         self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.AVAILABLE)
         self.assertEqual(pool[ROBERTO_NAME].owner, None)
+
+        self.assertTrue(pool.changed)
+        self.assertEqual(pool.known_resources(), DOUBLETON_POOL)
+        self.assertFalse(pool.changed)
 
     def test_release_one_resource_list(self):
         pool = ResourcePool(DOUBLETON_POOL)
@@ -312,7 +345,9 @@ class TestResourcePool(unittest.TestCase):
         self.assertEqual(len(pool), 2)
         self.assertIn(ROBERTO_NAME, pool)
         self.assertIn(MARVIN_NAME, pool)
+        self.assertTrue(pool.changed)
         self.assertEqual(pool.known_resources(), DOUBLETON_POOL)
+        self.assertFalse(pool.changed)
 
 
 class TestPoolResource(unittest.TestCase):

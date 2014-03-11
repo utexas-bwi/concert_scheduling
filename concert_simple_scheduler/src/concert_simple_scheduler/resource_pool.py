@@ -60,6 +60,7 @@ except ImportError:
             self.rapps = rapps
             self.status = CurrentStatus.AVAILABLE
             self.owner = None
+            self.priority = 0
 try:
     from scheduler_msgs.msg import KnownResources
 except ImportError:
@@ -262,6 +263,7 @@ class ResourcePool(object):
         req_id = request.uuid
         for resource in alloc:
             self.pool[resource.uri].allocate(req_id)
+            self.changed = True
         return alloc                    # success
 
     def get(self, resource_name, default=None):
@@ -338,6 +340,7 @@ class ResourcePool(object):
         rq_id = request.uuid
         for res in request.allocations:
             self.pool[res.uri].release(rq_id)
+            self.changed = True
 
     def release_resources(self, resources):
         """ Release a list of *resources*.
@@ -350,6 +353,7 @@ class ResourcePool(object):
         for res in resources:
             pool_res = self.pool[res.uri]
             pool_res.release()
+            self.changed = True
 
     def update(self, client_list):
         """ Update resource pool from a new concert clients list.
@@ -404,6 +408,9 @@ class PoolResource:
         """
         self.status = CurrentStatus.AVAILABLE
         """ Current status of this resource. """
+        self.priority = 0
+        """ Priority of request to which this resource is currently
+        assigned. """
 
     def __eq__(self, other):
         if self.uri != other.uri:
