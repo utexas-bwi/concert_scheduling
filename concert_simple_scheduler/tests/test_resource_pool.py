@@ -10,6 +10,7 @@ import unittest
 
 # ROS dependencies
 import unique_id
+from rocon_app_manager_msgs.msg import App
 from rocon_std_msgs.msg import PlatformInfo
 from concert_msgs.msg import ConcertClient
 from scheduler_msgs.msg import Request, Resource
@@ -334,7 +335,8 @@ class TestResourcePool(unittest.TestCase):
                 ConcertClient(
                     name='roberto',
                     platform_info=PlatformInfo(uri=ROBERTO_NAME),
-                    apps=TEST_RAPPS)])
+                    apps=[App(name=TELEOP_RAPP),
+                          App(name=EXAMPLE_RAPP)])])
         self.assertEqual(len(pool), 1)
         self.assertIn(ROBERTO_NAME, pool)
         self.assertTrue(pool.changed)

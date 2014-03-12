@@ -412,7 +412,9 @@ class PoolResource:
         except AttributeError:          # not a ConcertClient message?
             self.uri = rocon_name(msg.uri)
         try:
-            self.rapps = set(msg.apps)
+            self.rapps = set()
+            for rapp in msg.apps:
+                self.rapps.add(rapp.name)
             """ The :class:`set` of ROCON application name strings
             this platform advertises. """
         except AttributeError:          # not a ConcertClient message?
