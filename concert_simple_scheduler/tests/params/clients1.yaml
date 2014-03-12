@@ -1,0 +1,5 @@
+# list of client data containing a single item
+  -
+    name: roberto
+    uri: rocon:/turtlebot/roberto
+    rapps: [tests/example_rapp, rocon_apps/teleop]

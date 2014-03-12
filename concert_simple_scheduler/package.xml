@@ -19,17 +19,20 @@
   <build_depend>rocon_scheduler_requests</build_depend>
   <build_depend>roslint</build_depend>
   <build_depend>rospy</build_depend>
-  <build_depend>rostest</build_depend> <!-- testing only -->
   <build_depend>scheduler_msgs</build_depend>
   <build_depend>unique_id</build_depend>
 
   <run_depend>concert_msgs</run_depend>
   <run_depend>rocon_scheduler_requests</run_depend>
-  <run_depend>rocon_std_msgs</run_depend> <!-- testing only -->
   <run_depend>rospy</run_depend>
   <run_depend>scheduler_msgs</run_depend>
   <run_depend>unique_id</run_depend>
 
+  <!-- these dependencies are only for testing -->
+  <run_depend>python-yaml</run_depend>
+  <run_depend>rocon_app_manager_msgs</run_depend>
+  <run_depend>rocon_std_msgs</run_depend>
+  <build_depend>rostest</build_depend>
   <test_depend>rosunit</test_depend>
 
   <export>
