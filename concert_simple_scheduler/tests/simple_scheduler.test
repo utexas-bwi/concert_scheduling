@@ -7,7 +7,11 @@
 
   <!-- start simple scheduler node -->
   <node pkg="concert_simple_scheduler" type="simple_scheduler"
-        name="fifo_scheduler" />
+        name="simple_scheduler" />
+
+  <!-- start mock conductor node -->
+  <node pkg="concert_simple_scheduler" type="mock_conductor.py"
+        name="mock_conductor" />
 
   <!-- start requester unit test node -->
   <test test-name="simple_scheduler_test"
