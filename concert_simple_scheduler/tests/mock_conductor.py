@@ -24,7 +24,7 @@ def url_filename(url):
     elif parse.scheme == 'file':
         return parse.path
     else:
-        raise ValueError('invalid resource URL: ' + url)
+        raise ValueError('invalid resources URL: ' + url)
 
 
 class MockConductor():
@@ -37,7 +37,7 @@ class MockConductor():
         rospy.sleep(1.0)                # let publisher initialize
         try:
             self.send_resources()
-        except (ValueError, rospkg.common.ResourceNotFound) as e:
+        except (ValueError, IOError, rospkg.common.ResourceNotFound) as e:
             rospy.logfatal(str(e))
         else:
             rospy.spin()                # wait for shutdown
@@ -47,8 +47,9 @@ class MockConductor():
         url = rospy.get_param(
             '~resources_url',
             'package://concert_simple_scheduler/tests/params/clients1.yaml')
+        rospy.loginfo('resources URL: ' + url)
         yaml_name = url_filename(url)
-        rospy.loginfo(yaml_name)
+        rospy.logdebug(yaml_name)
         with open(yaml_name, 'rt') as f:
             resources = yaml.load(f)
             if resources is None:

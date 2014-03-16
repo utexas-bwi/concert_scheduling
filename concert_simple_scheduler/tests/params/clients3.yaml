@@ -1,0 +1,13 @@
+# list of client data containing three turtlebots
+  -
+    name: roberto
+    uri: rocon:/turtlebot/roberto
+    rapps: [tests/example_rapp, rocon_apps/teleop]
+  -
+    name: calculon
+    uri: rocon:/turtlebot/calculon
+    rapps: [tests/example_rapp, rocon_apps/teleop]
+  -
+    name: bender
+    uri: rocon:/turtlebot/bender
+    rapps: [tests/example_rapp, rocon_apps/teleop]

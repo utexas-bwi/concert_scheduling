@@ -11,7 +11,11 @@
 
   <!-- start mock conductor node -->
   <node pkg="concert_simple_scheduler" type="mock_conductor.py"
-        name="mock_conductor" />
+        name="mock_conductor">
+    <param
+        name="resources_url"
+        value="package://concert_simple_scheduler/tests/params/clients2.yaml"/>
+  </node>
 
   <!-- start requester unit test node -->
   <test test-name="simple_scheduler_test"
