@@ -10,6 +10,21 @@ import yaml
 from rocon_app_manager_msgs.msg import App
 from rocon_std_msgs.msg import PlatformInfo
 from concert_msgs.msg import ConcertClient, ConcertClients
+try:
+    from urllib.parse import urlparse   # python 3
+except ImportError:
+    from urlparse import urlparse       # python 2
+
+def url_filename(url):
+    """ :returns: file name corresponding to the *url*. """
+    parse = urlparse(url)
+    if parse.scheme == 'package':
+        r = rospkg.RosPack()
+        return r.get_path(parse.netloc) + parse.path
+    elif parse.scheme == 'file':
+        return parse.path
+    else:
+        raise ValueError('invalid resource URL: ' + url)
 
 
 class MockConductor():
@@ -20,21 +35,24 @@ class MockConductor():
         self.pub = rospy.Publisher('concert_client_changes',
                                    ConcertClients, queue_size=1, latch=True)
         rospy.sleep(1.0)                # let publisher initialize
-        self.send_resources()
-        rospy.spin()                    # wait for shutdown
-        
+        try:
+            self.send_resources()
+        except (ValueError, rospkg.common.ResourceNotFound) as e:
+            rospy.logfatal(str(e))
+        else:
+            rospy.spin()                # wait for shutdown
+
     def send_resources(self):
         """ Send resources on latched concert client topic. """
         url = rospy.get_param(
             '~resources_url',
             'package://concert_simple_scheduler/tests/params/clients1.yaml')
-        # TODO: parse package name, get file name and path
-        package = 'concert_simple_scheduler'
-        path = 'tests/params/clients1.yaml'
-        r = rospkg.RosPack()
-        yaml_name = r.get_path(package) + '/' + path
+        yaml_name = url_filename(url)
+        rospy.loginfo(yaml_name)
         with open(yaml_name, 'rt') as f:
             resources = yaml.load(f)
+            if resources is None:
+                resources = []
         msg = ConcertClients()
         for res in resources:
              ccl = ConcertClient(
