@@ -533,77 +533,6 @@ class TestPoolResource(unittest.TestCase):
         self.assertEqual(rocon_name(TEST_ANOTHER_NAME), TEST_ANOTHER_NAME)
         self.assertNotEqual(rocon_name(TEST_ANOTHER_NAME), TEST_RESOURCE_NAME)
 
-
-class TestResourceSet(unittest.TestCase):
-    """Unit tests for resource set operations.
-
-    These tests do not require a running ROS core.
-    """
-
-    ####################
-    # resource set tests -- deprecated, but run them for now
-    ####################
-
-    def test_empty_resource_set(self):
-        res_set = ResourceSet()
-        self.assertIsNotNone(res_set)
-        self.assertEqual(len(res_set), 0)
-        self.assertFalse(PoolResource(TEST_STATUS) in res_set)
-        self.assertTrue('arbitrary name' not in res_set)
-        self.assertTrue(TEST_RESOURCE_NAME not in res_set)
-        self.assertIsNone(res_set.get(TEST_RESOURCE_NAME))
-        self.assertEqual(res_set.get(TEST_RESOURCE_NAME, 3.14), 3.14)
-
-        # Test equality for empty res_sets.
-        self.assertTrue(res_set == ResourceSet([]))
-        self.assertFalse(not res_set == ResourceSet([]))
-        self.assertTrue((res_set != ResourceSet([TEST_RESOURCE])))
-        self.assertFalse(res_set == ResourceSet([TEST_STATUS]))
-        self.assertEqual(str(res_set), 'ROCON resource set:')
-
-    def test_one_resource_set(self):
-        res_set = ResourceSet(KnownResources(resources=[TEST_RESOURCE]))
-        self.assertEqual(len(res_set), 1)
-        self.assertTrue(PoolResource(TEST_RESOURCE) in res_set)
-        self.assertTrue(TEST_RESOURCE_NAME in res_set)
-        self.assertEqual(res_set.get(TEST_RESOURCE_NAME),
-                         res_set[TEST_RESOURCE_NAME])
-        self.assertEqual(res_set.get(TEST_RESOURCE_NAME, 3.14),
-                         res_set[TEST_RESOURCE_NAME])
-        self.assertNotIn('', res_set)
-        self.assertIn(TEST_RESOURCE_NAME, res_set)
-        self.assertNotIn(TEST_ANOTHER_NAME, res_set)
-
-        # Test equality for non-empty res_sets.
-        self.assertNotEqual(res_set, ResourceSet([]))
-        self.assertEqual(res_set, ResourceSet([TEST_RESOURCE]))
-        self.assertMultiLineEqual(
-            str(res_set), 'ROCON resource set:\n  ' + TEST_RESOURCE_STRING)
-        self.assertNotEqual(res_set, ResourceSet([Resource(
-            uri='rocon:/segbot/roberto', rapp='other_package/teleop')]))
-
-    def test_two_resource_set(self):
-        res_set = ResourceSet()
-        self.assertEqual(len(res_set), 0)
-        self.assertNotIn(TEST_RESOURCE_NAME, res_set)
-        self.assertNotIn(TEST_ANOTHER_NAME, res_set)
-
-        res_set[TEST_RESOURCE_NAME] = PoolResource(TEST_STATUS)
-        self.assertEqual(len(res_set), 1)
-        self.assertIn(TEST_RESOURCE_NAME, res_set)
-        self.assertNotIn(TEST_ANOTHER_NAME, res_set)
-
-        res_set[TEST_ANOTHER_NAME] = TEST_ANOTHER
-        self.assertEqual(len(res_set), 2)
-        self.assertIn(TEST_RESOURCE_NAME, res_set)
-        self.assertIn(TEST_ANOTHER_NAME, res_set)
-
-        # Test equality for res_set.
-        self.assertFalse(res_set == ResourceSet([]))
-        self.assertTrue(not res_set == ResourceSet([]))
-        self.assertFalse(res_set != ResourceSet([TEST_RESOURCE, TEST_ANOTHER]))
-        self.assertTrue(res_set == ResourceSet([TEST_RESOURCE, TEST_ANOTHER]))
-
 if __name__ == '__main__':
     import rosunit
     rosunit.unitrun('concert_simple_scheduler',
@@ -612,6 +541,3 @@ if __name__ == '__main__':
     rosunit.unitrun('concert_simple_scheduler',
                     'test_pool_resource',
                     TestPoolResource)
-    rosunit.unitrun('concert_simple_scheduler',
-                    'test_resource_sets',
-                    TestResourceSet)
