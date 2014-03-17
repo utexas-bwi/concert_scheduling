@@ -37,6 +37,7 @@ TEST_RESOURCE = Resource(uri=TEST_RESOURCE_NAME,
 TEST_RESOURCE_STRING = (
     """rocon:/segbot/roberto, status: 0
   owner: None
+  priority: 0
   rapps:
     """ + EXAMPLE_RAPP)
 
@@ -46,6 +47,7 @@ TEST_ANOTHER_NAME = 'rocon:/segbot/marvin'
 TEST_ANOTHER_STRING = (
     """rocon:/segbot/marvin, status: 0
   owner: None
+  priority: 0
   rapps:
     """ + EXAMPLE_RAPP)
 

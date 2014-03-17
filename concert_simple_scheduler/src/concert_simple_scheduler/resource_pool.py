@@ -453,7 +453,8 @@ class PoolResource:
         for rapp_name in self.rapps:
             rappstr += '\n    ' + str(rapp_name)
         return (self.uri + ', status: ' + str(self.status)
-                + '\n  owner: ' + str(self.owner)  # + priority
+                + '\n  owner: ' + str(self.owner)
+                + '\n  priority: ' + str(self.priority)
                 + '\n  rapps:' + rappstr)
 
     def allocate(self, request):
