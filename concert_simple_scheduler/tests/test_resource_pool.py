@@ -14,10 +14,7 @@ from rocon_app_manager_msgs.msg import App
 from rocon_std_msgs.msg import PlatformInfo
 from concert_msgs.msg import ConcertClient
 from scheduler_msgs.msg import Request, Resource
-try:
-    from scheduler_msgs.msg import CurrentStatus, KnownResources
-except ImportError:
-    from .resource_pool import CurrentStatus, KnownResources
+from scheduler_msgs.msg import CurrentStatus, KnownResources
 from rocon_scheduler_requests.transitions import ActiveRequest
 
 # module being tested:
@@ -34,7 +31,9 @@ TEST_RAPPS = [TELEOP_RAPP, EXAMPLE_RAPP]
 
 TEST_STATUS = CurrentStatus(uri='rocon:/segbot/roberto', rapps=[EXAMPLE_RAPP])
 TEST_RESOURCE_NAME = 'rocon:/segbot/roberto'
-TEST_RESOURCE = Resource(uri=TEST_RESOURCE_NAME, rapp=EXAMPLE_RAPP)
+TEST_RESOURCE = Resource(uri=TEST_RESOURCE_NAME,
+                         id=unique_id.toMsg(TEST_UUID),
+                         rapp=EXAMPLE_RAPP)
 TEST_RESOURCE_STRING = (
     """rocon:/segbot/roberto, status: 0
   owner: None
@@ -416,16 +415,18 @@ class TestPoolResource(unittest.TestCase):
         self.assertNotEqual(str(res2), TEST_ANOTHER_STRING)
 
     def test_allocate(self):
-        res1 = PoolResource(Resource(
-            uri='rocon:/segbot/roberto',
-            rapp=EXAMPLE_RAPP))
+        res1 = PoolResource(copy.deepcopy(TEST_RESOURCE))
         self.assertEqual(res1.status, CurrentStatus.AVAILABLE)
         self.assertEqual(res1.owner, None)
-        res1.allocate(TEST_UUID)
+        res1.allocate(copy.deepcopy(ROBERTO_REQUEST))
         self.assertEqual(res1.status, CurrentStatus.ALLOCATED)
-        self.assertEqual(res1.owner, TEST_UUID)
-        self.assertRaises(ResourceNotAvailableError, res1.allocate, DIFF_UUID)
-        self.assertRaises(ResourceNotAvailableError, res1.allocate, TEST_UUID)
+        self.assertEqual(res1.owner, RQ_UUID)
+        self.assertRaises(
+            ResourceNotAvailableError,
+            res1.allocate,
+            ActiveRequest(Request(
+                    id=unique_id.toMsg(DIFF_UUID),
+                    resources=[ROBERTO_RESOURCE])))
 
     def test_equality(self):
         res1 = PoolResource(Resource(
@@ -446,7 +447,7 @@ class TestPoolResource(unittest.TestCase):
         # different owner
         res2 = PoolResource(Resource(
             uri='rocon:/segbot/roberto', rapp='rocon_apps/teleop'))
-        res2.allocate(TEST_UUID)
+        res2.allocate(copy.deepcopy(ROBERTO_REQUEST))
         self.assertNotEqual(res1, res2)
 
         # different status
@@ -496,31 +497,31 @@ class TestPoolResource(unittest.TestCase):
             uri='rocon:/segbot/roberto', rapp=EXAMPLE_RAPP))
         self.assertEqual(res1.status, CurrentStatus.AVAILABLE)
         self.assertEqual(res1.owner, None)
-        res1.allocate(TEST_UUID)
+        res1.allocate(copy.deepcopy(ROBERTO_REQUEST))
         self.assertEqual(res1.status, CurrentStatus.ALLOCATED)
-        self.assertEqual(res1.owner, TEST_UUID)
+        self.assertEqual(res1.owner, RQ_UUID)
         self.assertRaises(ResourceNotOwnedError, res1.release, DIFF_UUID)
         self.assertEqual(res1.status, CurrentStatus.ALLOCATED)
-        res1.release(TEST_UUID)
+        res1.release(RQ_UUID)
         self.assertEqual(res1.status, CurrentStatus.AVAILABLE)
 
         res2 = PoolResource(Resource(
             uri='rocon:/segbot/roberto', rapp=EXAMPLE_RAPP))
-        res2.allocate(TEST_UUID)
+        res2.allocate(copy.deepcopy(ROBERTO_REQUEST))
         self.assertEqual(res2.status, CurrentStatus.ALLOCATED)
         res2.status = CurrentStatus.MISSING    # resource now missing
-        res2.release(TEST_UUID)
+        res2.release(RQ_UUID)
         self.assertEqual(res2.status, CurrentStatus.MISSING)
 
         res3 = PoolResource(Resource(
             uri='rocon:/segbot/roberto', rapp=EXAMPLE_RAPP))
-        res3.allocate(TEST_UUID)
+        res3.allocate(copy.deepcopy(ROBERTO_REQUEST))
         res3.release()
         self.assertEqual(res3.status, CurrentStatus.AVAILABLE)
 
         res4 = PoolResource(Resource(
             uri='rocon:/segbot/roberto', rapp=EXAMPLE_RAPP))
-        res4.allocate(TEST_UUID)
+        res4.allocate(copy.deepcopy(ROBERTO_REQUEST))
         res4.status = CurrentStatus.MISSING    # resource now missing
         res4.release()
         self.assertEqual(res4.status, CurrentStatus.MISSING)

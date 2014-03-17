@@ -261,9 +261,8 @@ class ResourcePool(object):
                 return []               # failure: no matches work
 
         # successful: allocate to this request
-        req_id = request.uuid
         for resource in alloc:
-            self.pool[resource.uri].allocate(req_id)
+            self.pool[resource.uri].allocate(request)
             self.changed = True
         return alloc                    # success
 
@@ -454,14 +453,14 @@ class PoolResource:
         for rapp_name in self.rapps:
             rappstr += '\n    ' + str(rapp_name)
         return (self.uri + ', status: ' + str(self.status)
-                + '\n  owner: ' + str(self.owner)
+                + '\n  owner: ' + str(self.owner)  # + priority
                 + '\n  rapps:' + rappstr)
 
-    def allocate(self, request_id):
+    def allocate(self, request):
         """ Allocate this resource.
 
-        :param request_id: New owner of this resource.
-        :type request_id: :class:`uuid.UUID`
+        :param request: New owner of this resource.
+        :type request: :class:`.ActiveRequest`
 
         :raises: :exc:`.ResourceNotAvailableError` if not available
         """
@@ -469,7 +468,8 @@ class PoolResource:
             raise ResourceNotAvailableError('resource not available: '
                                             + self.uri)
         assert self.owner is None
-        self.owner = request_id
+        self.owner = request.uuid
+        self.priority = request.msg.priority
         self.status = CurrentStatus.ALLOCATED
 
     def current_status(self):
@@ -478,8 +478,7 @@ class PoolResource:
                             rapps=list(self.rapps))
         if self.status == CurrentStatus.ALLOCATED:
             msg.owner = self.owner
-            if hasattr(msg, 'priority'):
-                msg.priority = self.priority
+            msg.priority = self.priority
         return msg
 
     def match(self, res):
