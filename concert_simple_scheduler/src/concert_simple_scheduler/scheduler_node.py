@@ -50,6 +50,7 @@ from scheduler_msgs.msg import Request
 
 from .resource_pool import ResourcePool
 from .resource_pool import CurrentStatus
+from .resource_pool import InvalidRequestError
 from .priority_queue import PriorityQueue, QueueElement
 
 

@@ -45,6 +45,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 import copy
 from itertools import chain, islice, permutations
 import re
+import unique_id
 
 ## ROS messages
 from scheduler_msgs.msg import Resource
@@ -478,7 +479,7 @@ class PoolResource:
         msg = CurrentStatus(uri=self.uri, status=self.status,
                             rapps=list(self.rapps))
         if self.status == CurrentStatus.ALLOCATED:
-            msg.owner = self.owner
+            msg.owner = unique_id.toMsg(self.owner)
             msg.priority = self.priority
         return msg
 
