@@ -273,7 +273,7 @@ class TestResourcePool(unittest.TestCase):
             KnownResources(resources=[
                     CurrentStatus(uri=ROBERTO_NAME, rapps=TEST_RAPPS,
                                   status=CurrentStatus.ALLOCATED,
-                                  owner=RQ_UUID)]))
+                                  owner=unique_id.toMsg(RQ_UUID))]))
         self.assertFalse(pool.changed)
 
     def test_matching_allocation_two_resources(self):
