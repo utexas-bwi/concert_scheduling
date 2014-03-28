@@ -12,6 +12,7 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   README
    scheduler_node
    priority_queue
    resource_pool
