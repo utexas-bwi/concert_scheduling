@@ -370,7 +370,7 @@ class ResourcePool(object):
                 self.changed = True
 
         # previously-known resources not in clients_found are missing
-        missing_clients = set(self.pool.keys())-clients_found
+        missing_clients = set(self.pool.keys()) - clients_found
         for uri in missing_clients:
             self.pool[uri].status = CurrentStatus.MISSING
             self.changed = True

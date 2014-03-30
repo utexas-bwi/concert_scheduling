@@ -83,7 +83,13 @@ class SimpleSchedulerNode(object):
         self.notification_set = set()
         """ Set of requester identifiers to notify. """
         self.timer = rospy.Timer(self.period, self.reschedule)
-        self.sch = Scheduler(self.callback)
+
+        try:
+            topic_name = rospy.get_param('~topic_name')
+            self.sch = Scheduler(self.callback, topic=topic_name)
+        except KeyError:
+            self.sch = Scheduler(self.callback)  # use the default
+
         rospy.spin()
 
     def callback(self, rset):
