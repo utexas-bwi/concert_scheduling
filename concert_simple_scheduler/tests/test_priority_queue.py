@@ -218,6 +218,7 @@ class TestPriorityQueue(unittest.TestCase):
         self.assertEqual(qe.request.msg.resources[0].uri, ROBERTO_NAME)
 
     def test_remove_one_request(self):
+        # BUG: #18 this queue is LIFO, not FIFO
         pq = PriorityQueue()
         marvin = QueueElement(MARVIN_REQUEST, RQR_ID)
         pq.add(marvin)
@@ -225,25 +226,26 @@ class TestPriorityQueue(unittest.TestCase):
         pq.add(roberto)
         self.assertEqual(len(pq), 2)
         pq.remove(RQ1_UUID)
-        self.assertEqual(pq.peek(), roberto)
+        self.assertIs(pq.peek(), roberto)
         self.assertEqual(len(pq), 1)
         self.assertMultiLineEqual(str(pq.pop().request), str(ROBERTO_REQUEST))
 
     def test_two_request_constructor(self):
-        pq = PriorityQueue([
-                QueueElement(MARVIN_REQUEST, RQR_ID),
-                QueueElement(ROBERTO_REQUEST, RQR_ID)])
+        # BUG: #18 this queue is LIFO, not FIFO
+        marvin = QueueElement(MARVIN_REQUEST, RQR_ID)
+        roberto = QueueElement(ROBERTO_REQUEST, RQR_ID)
+        pq = PriorityQueue([marvin, roberto])
         self.assertEqual(len(pq), 2)
-        self.assertEqual(pq.peek(), QueueElement(MARVIN_REQUEST, RQR_ID))
+        self.assertIs(pq.peek(), roberto)
 
         rq1 = pq.pop()
         self.assertEqual(len(pq), 1)
-        self.assertMultiLineEqual(str(rq1.request), str(MARVIN_REQUEST))
-        self.assertEqual(pq.peek(), QueueElement(ROBERTO_REQUEST, RQR_ID))
+        self.assertIs(rq1.request, ROBERTO_REQUEST)
+        self.assertIs(pq.peek(), marvin)
 
         rq2 = pq.pop()
         self.assertEqual(len(pq), 0)
-        self.assertMultiLineEqual(str(rq2.request), str(ROBERTO_REQUEST))
+        self.assertIs(rq2.request, MARVIN_REQUEST)
 
 if __name__ == '__main__':
     import rosunit
