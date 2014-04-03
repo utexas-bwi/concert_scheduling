@@ -5,6 +5,12 @@
     It is explicitly excluded in ``conf.py``, because it does not
     appear anywhere in the TOC tree.
 
+.. _`concert_msgs/ConcertClient`:
+    http://docs.ros.org/api/concert_msgs/html/msg/ConcertClient.html
+
+.. _`concert_msgs/ConcertClients`:
+    http://docs.ros.org/api/concert_msgs/html/msg/ConcertClients.html
+
 .. _`first come, first served`:
     http://en.wikipedia.org/wiki/First-come,_first-served
 

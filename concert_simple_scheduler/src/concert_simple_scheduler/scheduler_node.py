@@ -44,14 +44,13 @@ ROCON services.
 """
 import rospy
 from rocon_scheduler_requests import Scheduler, TransitionError
-from concert_msgs.msg import ConcertClients
-from scheduler_msgs.msg import KnownResources
 from scheduler_msgs.msg import Request
 
-from .resource_pool import ResourcePool
+from .priority_queue import PriorityQueue, QueueElement
 from .resource_pool import CurrentStatus
 from .resource_pool import InvalidRequestError
-from .priority_queue import PriorityQueue, QueueElement
+from .resource_pool import ResourcePool
+from .scheduler_clients import SchedulerClients
 
 
 class SimpleSchedulerNode(object):
@@ -67,19 +66,12 @@ class SimpleSchedulerNode(object):
                  period=rospy.Duration(1.0)):
         """ Constructor. """
         rospy.init_node(node_name)
-        self.pool = ResourcePool()
-        self.pub_pool = rospy.Publisher('resource_pool', KnownResources,
-                                        queue_size=1, latch=True)
-        self.pub_pool.publish(self.pool.known_resources())
-        self.sub_client = rospy.Subscriber('concert_client_changes',
-                                           ConcertClients, self.track_clients,
-                                           queue_size=1, tcp_nodelay=True)
         self.ready_queue = PriorityQueue()
         """ Queue of waiting requests. """
         self.blocked_queue = PriorityQueue()
         """ Queue of blocked requests. """
         self.period = period
-        """ Duration between periodic rescheduling. """
+        """ Time duration between periodic rescheduling. """
         self.notification_set = set()
         """ Set of requester identifiers to notify. """
         self.timer = rospy.Timer(self.period, self.reschedule)
@@ -89,7 +81,10 @@ class SimpleSchedulerNode(object):
             self.sch = Scheduler(self.callback, topic=topic_name)
         except KeyError:
             self.sch = Scheduler(self.callback)  # use the default
+        self.clients = SchedulerClients(self.sch.lock, ResourcePool)
+        """ Known ROCON clients. """
 
+        # Handle messages until canceled.
         rospy.spin()
 
     def callback(self, rset):
@@ -119,7 +114,7 @@ class SimpleSchedulerNode(object):
             elem = self.ready_queue.pop()
             resources = []
             try:
-                resources = self.pool.allocate(elem.request)
+                resources = self.clients.allocate(elem.request)
             except InvalidRequestError as ex:
                 self.reject_request(elem, ex)
                 continue                # skip to next queue element
@@ -135,15 +130,14 @@ class SimpleSchedulerNode(object):
                     'Request granted: ' + str(elem.request.uuid))
             except TransitionError:     # request no longer active?
                 # Return allocated resources to the pool.
-                self.pool.release_resources(resources)
+                self.clients.release_resources(resources)
             self.notification_set.add(elem.requester_id)
 
         # notify all affected requesters
         self.notify_requesters()
 
-        # update resource_pool topic, if anything changed
-        if self.pool.changed:
-            self.pub_pool.publish(self.pool.known_resources())
+        # notify of resource pool changes, if necessary
+        self.clients.notify_resources()
 
     def free(self, request, requester_id):
         """ Free all resources allocated for this *request*.
@@ -151,7 +145,7 @@ class SimpleSchedulerNode(object):
         :param request: (:class:`.ActiveRequest`)
         :param requester_id: (:class:`uuid.UUID`) Unique requester identifier.
         """
-        self.pool.release_request(request)
+        self.clients.release_request(request)
         rospy.loginfo('Request canceled: ' + str(request.uuid))
         request.close()
         # remove request from any queues
@@ -212,6 +206,9 @@ class SimpleSchedulerNode(object):
         Moves requests that cannot be satisfied with
         currently-available resources to the blocked queue.
 
+        TODO: Also check the blocked queue for requests that can
+        be satisfied due to newly arrived resources (#16).
+
         Uses the Big Scheduler Lock to serialize changes with
         operations done within the scheduler callback thread.
         """
@@ -223,7 +220,8 @@ class SimpleSchedulerNode(object):
                 # see if all available or allocated resources would suffice
                 criteria = {CurrentStatus.AVAILABLE,
                             CurrentStatus.ALLOCATED}
-                if self.pool.match_list(elem.request.msg.resources, criteria):
+                if self.clients.match_list(elem.request.msg.resources,
+                                           criteria):
                     # request not blocked
                     self.ready_queue.add(elem)
                     break               # done rescheduling
@@ -244,18 +242,6 @@ class SimpleSchedulerNode(object):
             for rq in queue:
                 if rq.requester_id == requester_id:
                     self.free(rq, requester_id)
-
-    def track_clients(self, msg):
-        """ Concert clients message callback.
-
-        Updates the resource pool based on client changes published by
-        the concert conductor.
-
-        Uses the Big Scheduler Lock to serialize changes with
-        operations done within the scheduler callback thread.
-        """
-        with self.sch.lock:
-            self.pool.update(msg.clients)
 
 
 def main():

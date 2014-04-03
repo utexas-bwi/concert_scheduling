@@ -1,7 +1,7 @@
 Change history
 ==============
 
-(Forthcoming)
--------------
+0.7.0 (Forthcoming)
+-------------------
 
- * Experimental Python scheduler node.
+ * Simple example concert scheduler node written in Python.
