@@ -226,7 +226,8 @@ class TestPriorityQueue(unittest.TestCase):
         pq.add(roberto)
         self.assertEqual(len(pq), 2)
         pq.remove(RQ1_UUID)
-        self.assertIs(pq.peek(), roberto)
+        self.assertIs(pq.peek().request, ROBERTO_REQUEST)
+        self.assertEqual(pq.peek(), roberto)
         self.assertEqual(len(pq), 1)
         self.assertMultiLineEqual(str(pq.pop().request), str(ROBERTO_REQUEST))
 
@@ -236,12 +237,14 @@ class TestPriorityQueue(unittest.TestCase):
         roberto = QueueElement(ROBERTO_REQUEST, RQR_ID)
         pq = PriorityQueue([marvin, roberto])
         self.assertEqual(len(pq), 2)
-        self.assertIs(pq.peek(), roberto)
+        self.assertIs(pq.peek().request, ROBERTO_REQUEST)
+        self.assertEqual(pq.peek(), roberto)
 
         rq1 = pq.pop()
         self.assertEqual(len(pq), 1)
         self.assertIs(rq1.request, ROBERTO_REQUEST)
-        self.assertIs(pq.peek(), marvin)
+        self.assertIs(pq.peek().request, MARVIN_REQUEST)
+        self.assertEqual(pq.peek(), marvin)
 
         rq2 = pq.pop()
         self.assertEqual(len(pq), 0)

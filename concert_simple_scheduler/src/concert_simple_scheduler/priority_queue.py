@@ -97,7 +97,7 @@ class PriorityQueue(object):
         """
         if hash(element) in self._requests:  # already in the queue?
             self.remove(element)        # mark that copy inactive
-        #element = copy.deepcopy(element)
+        element = copy.copy(element)
         element.active = True
         if priority is not None:
             element.request.msg.priority = priority
