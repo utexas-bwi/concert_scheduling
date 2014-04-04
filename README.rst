@@ -1,15 +1,26 @@
-rocon_experimental
+concert_scheduling
 ==================
 
-Experimental packages for the `Robotics in Concert`_ project.
+Scheduler support packages for the `Robotics in Concert`_ project.
 
-*This is a sandbox repository.  Anything worth keeping will probably
-land somewhere else.*
+*These packages are still in development.*  
+
+Because different systems require different scheduling policies, the
+ROCON design allows for multiple scheduler implementations.  These ROS
+packages provide some common infrastructure, written in Python, for
+various scheduler implementations to use or modify.
+
+It also includes an example scheduler, which uses that infrastructure
+to create a simple fixed-priority, first-come-first-served
+implementation, probably the simplest scheduler one could actually
+run.
 
 Links to documentation:
 
- * `concert_simple_scheduler`_
+ * `concert_scheduler_requests`_ interfaces for making and handling scheduler requests
+ * `concert_simple_scheduler`_ a simple fixed-priority scheduler
 
+.. _`concert_scheduler_requests`: http://wiki.ros.org/concert_scheduler_requests
+.. _`concert_simple_scheduler`: http://wiki.ros.org/concert_simple_scheduler
 .. _`Robotics in Concert`: http://www.robotconcert.org/wiki/Main_Page
-.. _`concert_simple_scheduler`: http://farnsworth.csres.utexas.edu/docs/concert_simple_scheduler/html
 
