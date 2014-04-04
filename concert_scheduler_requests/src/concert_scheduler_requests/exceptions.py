@@ -33,14 +33,14 @@
 """
 .. module:: exceptions
 
-This module defines exceptions raised by the rocon_scheduler_requests
+This module defines exceptions raised by the concert_scheduler_requests
 package.
 
 These exception names are all included in the main
-rocon_scheduler_requests namespace.  To catch one, import it this
+concert_scheduler_requests namespace.  To catch one, import it this
 way::
 
-    from rocon_scheduler_requests import TransitionError
+    from concert_scheduler_requests import TransitionError
 
 """
 

@@ -13,7 +13,7 @@ import unique_id
 from scheduler_msgs.msg import Request, Resource
 
 # module being tested:
-from rocon_scheduler_requests.transitions import *
+from concert_scheduler_requests.transitions import *
 
 RQR_UUID = uuid.UUID('01234567-89ab-cdef-0123-456789abcdef')
 TEST_UUID = uuid.UUID('01234567-89ab-cdef-fedc-ba9876543210')
@@ -436,9 +436,9 @@ requests:
 
 if __name__ == '__main__':
     import rosunit
-    rosunit.unitrun('rocon_scheduler_requests',
+    rosunit.unitrun('concert_scheduler_requests',
                     'test_transitions',
                     TestTransitions)
-    rosunit.unitrun('rocon_scheduler_requests',
+    rosunit.unitrun('concert_scheduler_requests',
                     'test_request_sets',
                     TestRequestSets)

@@ -1,7 +1,7 @@
 Overview
 ========
 
-The `rocon_scheduler_requests`_ ROS_ package provides Python 
+The `concert_scheduler_requests`_ ROS_ package provides Python 
 interfaces for managing scheduler requests within the `Robotics in
 Concert`_ framework.
 
@@ -47,7 +47,7 @@ schedulers and requesters to perform those transitions correctly.
 
 .. _`operating system schedulers`: http://en.wikipedia.org/wiki/Scheduling_(computing)
 .. _`Robotics in Concert`: http://www.robotconcert.org/wiki/Main_Page
-.. _`rocon_scheduler_requests`: http://wiki.ros.org/rocon_scheduler_requests
+.. _`concert_scheduler_requests`: http://wiki.ros.org/concert_scheduler_requests
 .. _ROS: http://wiki.ros.org
 .. _`scheduler_msgs/Request`: https://github.com/jack-oquin/rocon_msgs/blob/hydro-devel/scheduler_msgs/msg/Request.msg
 .. _`scheduler_msgs/SchedulerRequests`: https://github.com/jack-oquin/rocon_msgs/blob/hydro-devel/scheduler_msgs/msg/SchedulerRequests.msg

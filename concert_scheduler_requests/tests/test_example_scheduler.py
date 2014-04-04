@@ -8,7 +8,7 @@ import unittest
 import collections
 import rospy
 from scheduler_msgs.msg import  Request, Resource
-from rocon_scheduler_requests import Requester
+from concert_scheduler_requests import Requester
 
 
 class TestExampleScheduler(unittest.TestCase):
@@ -96,6 +96,6 @@ class TestExampleScheduler(unittest.TestCase):
 
 if __name__ == '__main__':
     import rostest
-    rostest.rosrun('rocon_scheduler_requests',
+    rostest.rosrun('concert_scheduler_requests',
                    'test_example_scheduler',
                    TestExampleScheduler) 

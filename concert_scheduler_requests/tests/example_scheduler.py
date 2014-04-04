@@ -3,7 +3,7 @@
 from collections import deque
 import rospy
 from scheduler_msgs.msg import Request, Resource
-from rocon_scheduler_requests import Scheduler, TransitionError
+from concert_scheduler_requests import Scheduler, TransitionError
 
 
 class ExampleScheduler:

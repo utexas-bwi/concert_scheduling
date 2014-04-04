@@ -6,12 +6,12 @@
 <launch>
 
   <!-- start timeout scheduler node -->
-  <node pkg="rocon_scheduler_requests" type="example_scheduler.py"
+  <node pkg="concert_scheduler_requests" type="example_scheduler.py"
         name="timeout_scheduler" />
 
   <!-- start timeout requester node -->
   <test test-name="timeout_scheduler" time-limit="45.0"
-        pkg="rocon_scheduler_requests" type="timeout_reconnect.py"
+        pkg="concert_scheduler_requests" type="timeout_reconnect.py"
         name="timeout_reconnect" />
 
 </launch>

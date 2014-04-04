@@ -1,15 +1,19 @@
 <package>
-  <name>rocon_scheduler_requests</name>
-  <version>0.6.6</version>
+  <name>concert_scheduler_requests</name>
+  <version>0.7.0</version>
   <description>
-    Python and C++ interfaces for managing ROCON scheduler requests.
+    Python interfaces for managing ROCON scheduler requests.
   </description>
   <maintainer email="jack.oquin@gmail.com">Jack O'Quin</maintainer>
   <license>BSD</license>  
 
-  <url type="website">http://wiki.ros.org/rocon_scheduler_requests</url>
-  <url type="repository">https://github.com/utexas-bwi/rocon_scheduler_requests.git</url>
-  <url type="bugtracker">https://github.com/utexas-bwi/rocon_scheduler_requests/issues</url>
+  <url type="website">http://wiki.ros.org/concert_scheduler_requests</url>
+  <url type="repository">
+    https://github.com/utexas-bwi/concert_scheduling.git
+  </url>
+  <url type="bugtracker">
+    https://github.com/utexas-bwi/concert_scheduling/issues
+  </url>
   <author>Jack O'Quin</author>
 
   <buildtool_depend>catkin</buildtool_depend>

@@ -1,5 +1,5 @@
 transitions
 -----------
 
-.. automodule:: rocon_scheduler_requests.transitions
+.. automodule:: concert_scheduler_requests.transitions
    :members:

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(rocon_scheduler_requests)
+project(concert_scheduler_requests)
 
 # Minimal Python module setup
 find_package(catkin REQUIRED COMPONENTS roslint)

@@ -1,5 +1,5 @@
 requester
 ---------
 
-.. automodule:: rocon_scheduler_requests.requester
+.. automodule:: concert_scheduler_requests.requester
    :members:

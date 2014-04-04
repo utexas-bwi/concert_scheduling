@@ -2,7 +2,7 @@
 """ Requester usage example. """
 import rospy
 from scheduler_msgs.msg import Request, Resource
-from rocon_scheduler_requests import Requester
+from concert_scheduler_requests import Requester
 
 
 class ExampleRequester:

@@ -8,7 +8,7 @@ import uuid
 import unittest
 
 # module being tested:
-import rocon_scheduler_requests.common as common
+import concert_scheduler_requests.common as common
 
 TEST_UUID_HEX = '0123456789abcdef0123456789abcdef'
 TEST_UUID = uuid.UUID(hex=TEST_UUID_HEX)
@@ -29,6 +29,6 @@ class TestCommonModule(unittest.TestCase):
 
 if __name__ == '__main__':
     import rosunit
-    rosunit.unitrun('rocon_scheduler_requests_common',
+    rosunit.unitrun('concert_scheduler_requests_common',
                     'test_common_module',
                     TestCommonModule)

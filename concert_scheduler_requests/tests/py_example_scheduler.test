@@ -6,12 +6,12 @@
 <launch>
 
   <!-- start example scheduler node -->
-  <node pkg="rocon_scheduler_requests" type="example_scheduler.py"
+  <node pkg="concert_scheduler_requests" type="example_scheduler.py"
         name="example_scheduler" />
 
   <!-- start requester unit test node -->
   <test test-name="test_example_scheduler"
-        pkg="rocon_scheduler_requests" type="test_example_scheduler.py"
+        pkg="concert_scheduler_requests" type="test_example_scheduler.py"
         name="test_example_scheduler" time-limit="30.0" />
 
 

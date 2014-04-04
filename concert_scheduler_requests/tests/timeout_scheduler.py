@@ -8,7 +8,7 @@ import unittest
 from collections import deque
 import rospy
 from scheduler_msgs.msg import Request, Resource
-from rocon_scheduler_requests import Scheduler, TransitionError
+from concert_scheduler_requests import Scheduler, TransitionError
 
 
 class TestTimeoutScheduler(unittest.TestCase):
@@ -87,5 +87,5 @@ class TestTimeoutScheduler(unittest.TestCase):
 
 if __name__ == '__main__':
     import rostest
-    rostest.rosrun('rocon_scheduler_requests',
+    rostest.rosrun('concert_scheduler_requests',
                    'timeout_scheduler', TestTimeoutScheduler)

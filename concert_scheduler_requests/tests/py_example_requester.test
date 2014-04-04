@@ -7,11 +7,11 @@
 
   <!-- start scheduler node -->
   <test test-name="test_example_requester"
-        pkg="rocon_scheduler_requests" type="test_example_requester.py"
+        pkg="concert_scheduler_requests" type="test_example_requester.py"
         name="test_example_requester" time-limit="30.0" />
 
   <!-- start example requester node -->
-  <node pkg="rocon_scheduler_requests" type="example_requester.py"
+  <node pkg="concert_scheduler_requests" type="example_requester.py"
         name="example_requester" />
 
 </launch>

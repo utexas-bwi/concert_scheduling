@@ -1,14 +1,16 @@
 Change history
 ==============
 
-0.7.0
------
+0.7.0 (forthcoming)
+-------------------
 
  * Target version for Indigo Igloo release.
+ * Rename `rocon_scheduler_requests`_ package to
+   `concert_scheduler_requests`_, replacing the earlier version.
 
 
-(forthcoming)
--------------
+0.6.6 (2014-04-01)
+------------------
 
  * Add thread locking for schedulers and requesters (`#24`_).
  * Rename ``ResourceReply`` class ``ActiveRequest`` (`#27`_).
@@ -22,6 +24,9 @@ Change history
 ------------------
 
  * Experimental Python module for testing scheduler_msgs interface.
+
+.. _concert_scheduler_requests: http://wiki.ros.org/concert_scheduler_requests
+.. _rocon_scheduler_requests: http://wiki.ros.org/rocon_scheduler_requests
 
 .. _`#21`: https://github.com/utexas-bwi/rocon_scheduler_requests/issues/21
 .. _`#24`: https://github.com/utexas-bwi/rocon_scheduler_requests/issues/24
