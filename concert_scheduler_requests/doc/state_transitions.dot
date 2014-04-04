@@ -1,0 +1,21 @@
+digraph state_transitions {
+   New [peripheries=2]
+   Reserved [peripheries=2]
+   Reserved -> Waiting [label="wait"]
+   Reserved -> Granted [label="grant"]
+   Reserved -> Canceling [label="cancel", style="dashed"]
+   New -> Waiting [label="wait"]
+   New -> Granted [label="grant"]
+   New -> Canceling [label="cancel", style="dashed"]
+   Waiting [style="filled", color="grey"]
+   Waiting -> Granted [label="grant"]
+   Waiting -> Canceling [label="cancel", style="dashed"]
+   Granted [style="filled", color="grey"]
+   Granted -> Preempting [label="preempt"]
+   Granted -> Canceling [label="cancel", style="dashed"]
+   Preempting [style="filled", color="grey"]
+   Preempting -> Canceling [label="cancel", style="dashed"]
+   Canceling
+   Canceling -> Closed [label="close"]
+   Closed [peripheries=2, style="filled", color="grey"]
+}

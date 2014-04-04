@@ -1,0 +1,17 @@
+<!-- rostest launch file for Python requester timeout
+
+     This unit test uses rostest, because it requires a ROS environment.  
+-->
+
+<launch>
+
+  <!-- start timeout scheduler node -->
+  <test test-name="timeout_scheduler" time-limit="30.0"
+        pkg="rocon_scheduler_requests" type="timeout_scheduler.py"
+        name="timeout_scheduler" />
+
+  <!-- start timeout requester node -->
+  <node pkg="rocon_scheduler_requests" type="timeout_requester.py"
+        name="timeout_requester" />
+
+</launch>

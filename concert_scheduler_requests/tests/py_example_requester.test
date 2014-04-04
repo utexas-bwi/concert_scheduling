@@ -1,0 +1,17 @@
+<!-- rostest launch file for Python example requester test
+
+     This unit test uses rostest, because it requires a ROS environment.  
+-->
+
+<launch>
+
+  <!-- start scheduler node -->
+  <test test-name="test_example_requester"
+        pkg="rocon_scheduler_requests" type="test_example_requester.py"
+        name="test_example_requester" time-limit="30.0" />
+
+  <!-- start example requester node -->
+  <node pkg="rocon_scheduler_requests" type="example_requester.py"
+        name="example_requester" />
+
+</launch>
