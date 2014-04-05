@@ -27,6 +27,7 @@ The following pages describe lower-level interfaces:
 
    common
    exceptions
+   priority_queue
    requester
    scheduler
    transitions

@@ -15,7 +15,6 @@ Contents:
    README
    scheduler_clients
    scheduler_node
-   priority_queue
    resource_pool
    CHANGELOG
 
