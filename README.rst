@@ -17,9 +17,11 @@ run.
 
 Links to documentation:
 
+ * `concert_resource_pool`_ interfaces for handling a pool of scheduler resources
  * `concert_scheduler_requests`_ interfaces for making and handling scheduler requests
  * `concert_simple_scheduler`_ a simple fixed-priority scheduler
 
+.. _`concert_resource_pool`: http://wiki.ros.org/concert_resource_pool
 .. _`concert_scheduler_requests`: http://wiki.ros.org/concert_scheduler_requests
 .. _`concert_simple_scheduler`: http://wiki.ros.org/concert_simple_scheduler
 .. _`Robotics in Concert`: http://www.robotconcert.org/wiki/Main_Page
