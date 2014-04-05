@@ -13,9 +13,7 @@ Contents:
    :maxdepth: 2
 
    README
-   scheduler_clients
    scheduler_node
-   resource_pool
    CHANGELOG
 
 Indices and tables

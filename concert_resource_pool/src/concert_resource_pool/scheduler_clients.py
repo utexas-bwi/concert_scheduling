@@ -53,14 +53,12 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import rospy
 from concert_msgs.msg import ConcertClients
-from concert_scheduler_requests import RappHandler
-from concert_scheduler_requests import FailedToStartRappError
-from concert_scheduler_requests import FailedToStopRappError
 from scheduler_msgs.msg import KnownResources
 
-from .resource_pool import ResourcePool
-from .resource_pool import CurrentStatus
-from .resource_pool import InvalidRequestError
+from .rapp_handler import (
+    FailedToStartRappError, FailedToStopRappError, RappHandler)
+from .resource_pool import (
+    CurrentStatus, InvalidRequestError, ResourcePool)
 
 
 class SchedulerClients(ResourcePool):

@@ -33,10 +33,3 @@
 from .exceptions import *
 from .requester import Requester
 from .scheduler import Scheduler
-
-# For use by custom scheduler implementations
-from .rapp_handler import (
-    FailedToStartRappError,
-    FailedToStopRappError,
-    RappHandler
-)

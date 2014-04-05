@@ -47,14 +47,13 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import rospy
 from concert_scheduler_requests import Scheduler, TransitionError
-from concert_scheduler_requests.priority_queue import (PriorityQueue,
-                                                       QueueElement)
+from concert_scheduler_requests.priority_queue import (
+    PriorityQueue, QueueElement)
 from scheduler_msgs.msg import Request
 
-from .resource_pool import CurrentStatus
-from .resource_pool import InvalidRequestError
-from .resource_pool import ResourcePool
-from .scheduler_clients import SchedulerClients
+from concert_resource_pool.resource_pool import (
+    CurrentStatus, InvalidRequestError, ResourcePool)
+from concert_resource_pool.scheduler_clients import SchedulerClients
 
 
 class SimpleSchedulerNode(object):

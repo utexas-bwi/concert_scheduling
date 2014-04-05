@@ -18,7 +18,7 @@ from scheduler_msgs.msg import CurrentStatus, KnownResources
 from concert_scheduler_requests.transitions import ActiveRequest
 
 # module being tested:
-from concert_simple_scheduler.resource_pool import *
+from concert_resource_pool.resource_pool import *
 
 # some definitions for testing
 RQ_UUID = uuid.UUID('01234567-89ab-cdef-0123-456789abcdef')
