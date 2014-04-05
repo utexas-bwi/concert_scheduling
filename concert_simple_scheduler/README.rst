@@ -59,7 +59,7 @@ allocation and feedback topics.
 Handling these messages and managing the states of each resource
 request can be quite tricky, because state changes flow over the two
 topics simultaneously.  Both schedulers and requesters should use the
-`rocon_scheduler_requests`_ package to perform the appropriate state
+`concert_scheduler_requests`_ package to perform the appropriate state
 transitions for every request.
 
 Usage
@@ -70,7 +70,7 @@ Usage
 .. _`concert_msgs/ConcertClients`:
    https://github.com/robotics-in-concert/rocon_msgs/blob/hydro-devel/concert_msgs/msg/ConcertClients.msg
 .. _`Robotics in Concert`: http://www.robotconcert.org/wiki/Main_Page
-.. _`rocon_scheduler_requests`: http://wiki.ros.org/rocon_scheduler_requests
+.. _`concert_scheduler_requests`: http://wiki.ros.org/concert_scheduler_requests
 .. _ROS: http://wiki.ros.org
 .. _`scheduler_msgs/KnownResources`:
    https://github.com/robotics-in-concert/rocon_msgs/blob/hydro-devel/scheduler_msgs/msg/KnownResources.msg

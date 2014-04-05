@@ -43,7 +43,7 @@ ROCON services.
 
 """
 import rospy
-from rocon_scheduler_requests import Scheduler, TransitionError
+from concert_scheduler_requests import Scheduler, TransitionError
 from scheduler_msgs.msg import Request
 
 from .priority_queue import PriorityQueue, QueueElement
@@ -93,7 +93,7 @@ class SimpleSchedulerNode(object):
         Called in the scheduler callback thread holding the Big
         Scheduler Lock.
 
-        See: :class:`.rocon_scheduler_requests.Scheduler` documentation.
+        See: :class:`.concert_scheduler_requests.Scheduler` documentation.
         """
         rospy.logdebug('scheduler callback:')
         for rq in rset.values():

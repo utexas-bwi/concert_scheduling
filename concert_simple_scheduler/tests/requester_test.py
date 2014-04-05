@@ -7,7 +7,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 import unittest
 import rospy
 from scheduler_msgs.msg import Request, Resource
-from rocon_scheduler_requests import Requester
+from concert_scheduler_requests import Requester
 
 
 class TestTimeoutRequester(unittest.TestCase):

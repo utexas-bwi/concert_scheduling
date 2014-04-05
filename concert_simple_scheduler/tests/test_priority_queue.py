@@ -12,7 +12,7 @@ import unittest
 # ROS dependencies
 import unique_id
 from scheduler_msgs.msg import Request, Resource
-from rocon_scheduler_requests.transitions import ActiveRequest
+from concert_scheduler_requests.transitions import ActiveRequest
 
 # module being tested:
 from concert_simple_scheduler.priority_queue import *

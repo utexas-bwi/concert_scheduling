@@ -15,7 +15,7 @@ from rocon_std_msgs.msg import PlatformInfo
 from concert_msgs.msg import ConcertClient
 from scheduler_msgs.msg import Request, Resource
 from scheduler_msgs.msg import CurrentStatus, KnownResources
-from rocon_scheduler_requests.transitions import ActiveRequest
+from concert_scheduler_requests.transitions import ActiveRequest
 
 # module being tested:
 from concert_simple_scheduler.resource_pool import *

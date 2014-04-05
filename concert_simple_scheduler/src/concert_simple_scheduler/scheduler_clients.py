@@ -53,9 +53,9 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import rospy
 from concert_msgs.msg import ConcertClients
-from rocon_scheduler_requests import RappHandler
-from rocon_scheduler_requests import FailedToStartRappError
-from rocon_scheduler_requests import FailedToStopRappError
+from concert_scheduler_requests import RappHandler
+from concert_scheduler_requests import FailedToStartRappError
+from concert_scheduler_requests import FailedToStopRappError
 from scheduler_msgs.msg import KnownResources
 
 from .resource_pool import ResourcePool
