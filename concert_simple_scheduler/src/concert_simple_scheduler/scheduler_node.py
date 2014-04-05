@@ -42,11 +42,15 @@ ROCON services.
 .. include:: weblinks.rst
 
 """
+# enable some python3 compatibility options:
+from __future__ import absolute_import, print_function, unicode_literals
+
 import rospy
 from concert_scheduler_requests import Scheduler, TransitionError
+from concert_scheduler_requests.priority_queue import (PriorityQueue,
+                                                       QueueElement)
 from scheduler_msgs.msg import Request
 
-from .priority_queue import PriorityQueue, QueueElement
 from .resource_pool import CurrentStatus
 from .resource_pool import InvalidRequestError
 from .resource_pool import ResourcePool

@@ -15,7 +15,7 @@ from scheduler_msgs.msg import Request, Resource
 from concert_scheduler_requests.transitions import ActiveRequest
 
 # module being tested:
-from concert_simple_scheduler.priority_queue import *
+from concert_scheduler_requests.priority_queue import *
 
 # some resources for testing
 RQR_ID = uuid.uuid4()
@@ -177,6 +177,7 @@ class TestPriorityQueue(unittest.TestCase):
         pq.add(elem)
         self.assertEqual(len(pq), 1)
         self.assertEqual(pq.peek(), elem)
+        self.assertIs(pq.peek().request, ROBERTO_REQUEST)
 
     def test_empty_constructor(self):
         pq0 = PriorityQueue()

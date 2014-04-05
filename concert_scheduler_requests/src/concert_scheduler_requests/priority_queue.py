@@ -39,6 +39,9 @@ This module provides queue containers for scheduler requests for the
 .. include:: weblinks.rst
 
 """
+# enable some python3 compatibility options:
+from __future__ import absolute_import, print_function, unicode_literals
+
 import copy
 import heapq
 import itertools
@@ -114,7 +117,7 @@ class PriorityQueue(object):
         for element in self._queue:
             if element.active:          # not previously removed?
                 return element
-        raise IndexError('pop from an empty priority queue')
+        raise IndexError('peek at an empty priority queue')
 
     def pop(self):
         """ Remove the top-priority element from the queue head.
