@@ -35,7 +35,7 @@
 
 Python interface for ROCON schedulers handling resource requests.
 
-.. _UUID: http://en.wikipedia.org/wiki/Uuid
+.. include:: weblinks.rst
 
 """
 

@@ -46,8 +46,8 @@ perform those transitions correctly.
 .. _`Robotics in Concert`: http://www.robotconcert.org/wiki/Main_Page
 .. _ROS: http://wiki.ros.org
 .. _`scheduler_msgs/Request`:
-   https://github.com/jack-oquin/rocon_msgs/blob/hydro-devel/scheduler_msgs/msg/Request.msg
+   http://docs.ros.org/api/scheduler_msgs/html/msg/Request.html
 .. _`scheduler_msgs/SchedulerRequests`:
-   https://github.com/jack-oquin/rocon_msgs/blob/hydro-devel/scheduler_msgs/msg/SchedulerRequests.msg
+   http://docs.ros.org/api/scheduler_msgs/html/msg/SchedulerRequests.html
 .. _`universally unique identifier`:
    http://en.wikipedia.org/wiki/Universally_unique_identifier

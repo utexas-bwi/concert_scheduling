@@ -36,8 +36,7 @@
 This module provides some common definitions for the ROCON resource
 scheduler, part of the `Robotics in Concert`_ project.
 
-.. _`Robotics in Concert`: http://www.robotconcert.org/wiki/Main_Page
-.. _UUID: http://en.wikipedia.org/wiki/Uuid
+.. include:: weblinks.rst
 
 """
 

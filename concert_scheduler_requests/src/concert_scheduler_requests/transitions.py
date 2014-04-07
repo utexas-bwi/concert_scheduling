@@ -45,10 +45,7 @@ may be initiated by either the requester or the scheduler.
 
 .. graphviz:: state_transitions.dot
 
-.. _scheduler_msgs:
-    http://wiki.ros.org/scheduler_msgs
-.. _`scheduler_msgs/Request`:
-    http://docs.ros.org/api/scheduler_msgs/html/msg/Request.html
+.. include:: weblinks.rst
 
 """
 

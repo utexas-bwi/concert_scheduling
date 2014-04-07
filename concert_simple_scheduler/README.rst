@@ -3,7 +3,7 @@ Overview
 
 The ``concert_simple_scheduler`` ROS_ package provides a Python
 implementation of a scheduler node for managing scheduler requests
-within the `Robotics in Concert`_ framework.
+within the `Robotics in Concert`_ (ROCON) framework.
 
 *This implementation is still experimental.*  
 
@@ -31,8 +31,8 @@ Subscribed topics
     messages to the ``rocon_scheduler`` topic is called a
     **requester**.
 
-``concert_client_changes`` (`concert_msgs/ConcertClients`_)
-    `Robotics in Concert`_ clients known to the Conductor.
+``concert_client_changes`` (`concert_msgs/ConcertClients`_) ROCON
+    clients known to the Conductor.
 
 
 Published topics
@@ -45,7 +45,7 @@ Published topics
     UUID.
 
 ``resource_pool`` (`scheduler_msgs/KnownResources`_)
-    The status of all clients currently managed by this scheduler.
+    The status of all ROCON clients currently managed by this scheduler.
 
 Protocol
 ''''''''
@@ -73,10 +73,10 @@ Usage
 .. _`concert_scheduler_requests`: http://wiki.ros.org/concert_scheduler_requests
 .. _ROS: http://wiki.ros.org
 .. _`scheduler_msgs/KnownResources`:
-   https://github.com/robotics-in-concert/rocon_msgs/blob/hydro-devel/scheduler_msgs/msg/KnownResources.msg
+   http://docs.ros.org/api/scheduler_msgs/html/msg/KnownResources.html
 .. _`scheduler_msgs/Request`:
-   https://github.com/robotics-in-concert/rocon_msgs/blob/hydro-devel/scheduler_msgs/msg/Request.msg
+   http://docs.ros.org/api/scheduler_msgs/html/msg/Request.html
 .. _`scheduler_msgs/SchedulerRequests`:
-   https://github.com/robotics-in-concert/rocon_msgs/blob/hydro-devel/scheduler_msgs/msg/SchedulerRequests.msg
+   http://docs.ros.org/api/scheduler_msgs/html/msg/SchedulerRequests.html
 .. _`universally unique identifier`:
    http://en.wikipedia.org/wiki/Universally_unique_identifier
