@@ -1,6 +1,6 @@
 <package>
   <name>concert_simple_scheduler</name>
-  <version>0.0.0</version>
+  <version>0.7.0</version>
   <description>
     This ROS package provides a simple, experimental, resource
     scheduler for the Robotics in Concert project.
