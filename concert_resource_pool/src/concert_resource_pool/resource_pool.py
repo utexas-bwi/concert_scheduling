@@ -117,268 +117,9 @@ def rocon_name(uri):
     return retval
 
 
-class ResourcePool(object):
-    """
-    This class manages a pool of :class:`.PoolResource` objects known
-    to the scheduler.
-
-    :param msg: An optional ``scheduler_msgs/KnownResources`` or
-        ``scheduler_msgs/Request`` message or a list of
-        ``CurrentStatus`` or ``Resource`` messages, like the
-        ``resources`` component of one of those messages.
-
-    :class:`.ResourcePool` supports these standard container operations:
-
-    .. describe:: len(pool)
-
-       :returns: The number of resources in the pool.
-
-    .. describe:: pool[uri]
-
-       :param uri: (str) The Uniform Resource Identifier of a resource
-           in the *pool*.
-       :returns: The :class:`.PoolResource` corresponding to *uri*.
-       :raises: :exc:`KeyError` if *uri* not in the *pool*.
-
-    .. describe:: uri in pool
-
-       :returns: ``True`` if *pool* contains *uri*, else ``False``.
-
-    .. describe:: uri not in pool
-
-       Equivalent to ``not uri in pool``.
-
-    .. describe:: str(pool)
-
-       :returns: Human-readable string representation of this
-           :class:`.ResourcePool`.
-
-    """
-    def __init__(self, msg=None):
-        self.pool = {}
-        """ Dictionary of known :class:`.PoolResource` objects,
-        indexed by the fully-resolved ROCON resource name.
-        """
-        self.changed = True
-        """ True, if resource pool has changed since the previous
-        known_resources() call. """
-        if msg is not None:
-            if hasattr(msg, 'resources'):
-                msg = msg.resources
-            for res in msg:
-                pool_res = PoolResource(res)
-                self.pool[pool_res.uri] = pool_res
-
-    def __contains__(self, uri):
-        return uri in self.pool
-
-    def __getitem__(self, uri):
-        return self.pool[uri]
-
-    def __len__(self):
-        return len(self.pool)
-
-    def __str__(self):
-        s = 'pool contents:'
-        for resource in self.pool.values():
-            s += '\n  ' + str(resource)
-        return s
-
-    def allocate(self, request):
-        """ Try to allocate all resources for a *request*.
-
-        :param request: Scheduler request object, some resources may
-            include regular expression syntax.
-        :type request: :class:`.ActiveRequest`
-
-        :returns: List of ``scheduler_msgs/Resource`` messages
-            allocated, in requested order with platform info fully
-            resolved; or ``[]`` if not everything is available.
-
-        :raises: :exc:`.InvalidRequestError` if the request is not valid.
-
-        If successful, matching ROCON resources are allocated to this
-        *request*.  Otherwise, the *request* remains unchanged.
-
-        """
-        n_wanted = len(request.msg.resources)  # number of resources wanted
-        if n_wanted == 0:
-            raise InvalidRequestError('No resources requested.')
-
-        # Make a list containing sets of the available resources
-        # matching each requested item.
-        matches = self.match_list(request.msg.resources,
-                                  {CurrentStatus.AVAILABLE})
-        if not matches:                 # unsuccessful?
-            return []                   # give up
-
-        # At least one resource is available that satisfies each item
-        # requested.  Try to allocate them all in the order requested.
-        alloc = self._allocate_permutation(range(n_wanted), request, matches)
-        if alloc:                       # successful?
-            return alloc
-
-        if n_wanted < 4:                # not too many permutations?
-            # Look for some other permutation that satisfies them all.
-            for perm in islice(permutations(range(n_wanted)), 1, None):
-                alloc = self._allocate_permutation(perm, request, matches)
-                if alloc:               # successful?
-                    return alloc
-
-        raise InvalidRequestError(
-            'Resources are available, but this request cannot be satisfied.')
-
-    def _allocate_permutation(self, perm, request, matches):
-        """ Try to allocate some permutation of resources for a *request*.
-
-        :param perm: List of permuted resource indices for this
-            *request*, like [0, 1, 2] or [1, 2, 0].
-        :param request: Scheduler request object, some resources may
-            include regular expression syntax.
-        :type request: :class:`.ActiveRequest`
-        :param matches: List containing sets of the available
-            resources matching each element of *request.msg.resources*.
-        :returns: List of ``scheduler_msgs/Resource`` messages
-            allocated, in requested order with platform info fully
-            resolved; or ``[]`` if not everything is available.
-
-        If successful, matching ROCON resources are allocated to this
-        *request*.  Otherwise, the *request* remains unchanged.
-
-        """
-        # Copy the list of Resource messages and all their contents.
-        alloc = copy.deepcopy(request.msg.resources)
-
-        # Search in permutation order for some valid allocation.
-        names_allocated = set([])
-        for i in perm:
-            # try each matching name in order
-            for name in matches[i]:
-                if name not in names_allocated:  # still available?
-                    names_allocated.add(name)
-                    alloc[i].uri = name
-                    break               # go on to next resource
-            else:
-                return []               # failure: no matches work
-
-        # successful: allocate to this request
-        for resource in alloc:
-            self.pool[resource.uri].allocate(request)
-            self.changed = True
-        return alloc                    # success
-
-    def get(self, resource_name, default=None):
-        """ Get named pool resource, if known.
-
-        :param resource_name: Name of desired resource.
-        :type resource_name: str
-        :param default: value to return if no such resource.
-        :returns: named :class:`.PoolResource` if successful, else *default*.
-        """
-        return self.pool.get(resource_name, default)
-
-    def known_resources(self):
-        """ Convert resource pool to ``scheduler_msgs/KnownResources``. """
-        msg = KnownResources()
-        for resource in self.pool.values():
-            msg.resources.append(resource.current_status())
-        self.changed = False
-        return msg
-
-    def match_list(self, resources, criteria):
-        """
-        Make a list containing sets of the available resources
-        matching each item in *resources*.
-
-        :param resources: List of Resource messages to match.
-        :param criteria: :class:`set` of resource status values allowed.
-
-        :returns: List of :class:`set` containing names of matching
-            resources, empty if any item cannot be satisfied, or there
-            are not enough resources, or the original *resources* list
-            was empty.
-        """
-        matches = []
-        for res_req in resources:
-            match_set = self._match_subset(res_req, criteria)
-            if len(match_set) == 0:     # no matches for this resource?
-                return []               # give up
-            matches.append(match_set)
-        if not matches:
-            return []                   # give up
-
-        # Each individual request can be satisfied, but there might
-        # not be enough to satisfy them all at once.  Verify that the
-        # union of the match sets contains as many resources as requested.
-        match_union = set(chain.from_iterable(matches))
-        if len(match_union) < len(resources):
-            return []                   # not enough stuff
-        return matches
-
-    def _match_subset(self, resource_msg, criteria):
-        """
-        Make a set of names of all available resources matching *resource_msg*.
-
-        :param resource_msg: Resource message from a scheduler Request.
-        :type resource_msg: ``scheduler_msgs/Resource``
-        :param criteria: :class:`set` of resource status values allowed.
-        :returns: :class:`set` containing matching resource names.
-        """
-        avail = set()
-        for res in self.pool.values():
-            if (res.status in criteria and res.match(resource_msg)):
-                avail.add(res.uri)
-        return avail
-
-    def release_request(self, request):
-        """ Release all the resources owned by this *request*.
-
-        :param request: Current owner of resources to release.
-        :type request: :class:`.ActiveRequest`
-
-        Only appropriate when this *request* is being closed.
-        """
-        rq_id = request.uuid
-        for res in request.allocations:
-            self.pool[res.uri].release(rq_id)
-            self.changed = True
-
-    def release_resources(self, resources):
-        """ Release a list of *resources*.
-
-        :param resources: List of ``scheduler_msgs/Resource`` messages.
-
-        This makes newly allocated *resources* available again when
-        they cannot be assigned to a request for some reason.
-        """
-        for res in resources:
-            pool_res = self.pool[res.uri]
-            pool_res.release()
-            self.changed = True
-
-    def update(self, client_list):
-        """ Update resource pool from a new concert clients list.
-
-        :param client_list: current list of ``ConcertClient`` messages.
-        """
-        clients_found = set()
-        for client in client_list:
-            uri = client.platform_info.uri
-            clients_found.add(uri)
-            if uri not in self.pool:    # not previously-known?
-                self.pool[uri] = PoolResource(client)
-                self.changed = True
-
-        # previously-known resources not in clients_found are missing
-        missing_clients = set(self.pool.keys()) - clients_found
-        for uri in missing_clients:
-            self.pool[uri].status = CurrentStatus.MISSING
-            self.changed = True
-
-
 class PoolResource:
     """
-    Class for tracking the status of a single ROCON_ resource.
+    Base class for tracking the status of a single ROCON_ resource.
 
     :param msg: ROCON scheduler resource description message.
     :type msg: ``ConcertClient``, ``CurrentStatus`` or ``Resource``
@@ -537,3 +278,266 @@ class PoolResource:
         self.priority = 0               # no longer applicable
         if self.status == CurrentStatus.ALLOCATED:  # not gone missing?
             self.status = CurrentStatus.AVAILABLE
+
+
+class ResourcePool(object):
+    """
+    This class manages a pool of :class:`.PoolResource` objects known
+    to the scheduler.
+
+    :param msg: An optional ``scheduler_msgs/KnownResources`` or
+        ``scheduler_msgs/Request`` message or a list of
+        ``CurrentStatus`` or ``Resource`` messages, like the
+        ``resources`` component of one of those messages.
+    :param pool_resource: a possibly-derived class providing a
+        compatible :class:`.ResourcePool` interface.
+
+    :class:`.ResourcePool` supports these standard container operations:
+
+    .. describe:: len(pool)
+
+       :returns: The number of resources in the pool.
+
+    .. describe:: pool[uri]
+
+       :param uri: (str) The Uniform Resource Identifier of a resource
+           in the *pool*.
+       :returns: The actual pool resource corresponding to *uri*.
+       :raises: :exc:`KeyError` if *uri* not in the *pool*.
+
+    .. describe:: uri in pool
+
+       :returns: ``True`` if *pool* contains *uri*, else ``False``.
+
+    .. describe:: uri not in pool
+
+       Equivalent to ``not uri in pool``.
+
+    .. describe:: str(pool)
+
+       :returns: Human-readable string representation of this
+           :class:`.ResourcePool`.
+
+    """
+    def __init__(self, msg=None, pool_resource=PoolResource):
+        self.pool = {}
+        """ Dictionary of known *pool_resource* objects, indexed by
+        the fully-resolved ROCON resource name.
+        """
+        self.changed = True
+        """ True, if resource pool has changed since the previous
+        known_resources() call. """
+        self.pool_resource = pool_resource
+        """ The :class:`.ResourcePool` class this pool contains. """
+        if msg is not None:
+            if hasattr(msg, 'resources'):
+                msg = msg.resources
+            for res in msg:
+                pool_res = self.pool_resource(res)
+                self.pool[pool_res.uri] = pool_res
+
+    def __contains__(self, uri):
+        return uri in self.pool
+
+    def __getitem__(self, uri):
+        return self.pool[uri]
+
+    def __len__(self):
+        return len(self.pool)
+
+    def __str__(self):
+        s = 'pool contents:'
+        for resource in self.pool.values():
+            s += '\n  ' + str(resource)
+        return s
+
+    def allocate(self, request):
+        """ Try to allocate all resources for a *request*.
+
+        :param request: Scheduler request object, some resources may
+            include regular expression syntax.
+        :type request: :class:`.ActiveRequest`
+
+        :returns: List of ``scheduler_msgs/Resource`` messages
+            allocated, in requested order with platform info fully
+            resolved; or ``[]`` if not everything is available.
+
+        :raises: :exc:`.InvalidRequestError` if the request is not valid.
+
+        If successful, matching ROCON resources are allocated to this
+        *request*.  Otherwise, the *request* remains unchanged.
+
+        """
+        n_wanted = len(request.msg.resources)  # number of resources wanted
+        if n_wanted == 0:
+            raise InvalidRequestError('No resources requested.')
+
+        # Make a list containing sets of the available resources
+        # matching each requested item.
+        matches = self.match_list(request.msg.resources,
+                                  {CurrentStatus.AVAILABLE})
+        if not matches:                 # unsuccessful?
+            return []                   # give up
+
+        # At least one resource is available that satisfies each item
+        # requested.  Try to allocate them all in the order requested.
+        alloc = self._allocate_permutation(range(n_wanted), request, matches)
+        if alloc:                       # successful?
+            return alloc
+
+        if n_wanted < 4:                # not too many permutations?
+            # Look for some other permutation that satisfies them all.
+            for perm in islice(permutations(range(n_wanted)), 1, None):
+                alloc = self._allocate_permutation(perm, request, matches)
+                if alloc:               # successful?
+                    return alloc
+
+        raise InvalidRequestError(
+            'Resources are available, but this request cannot be satisfied.')
+
+    def _allocate_permutation(self, perm, request, matches):
+        """ Try to allocate some permutation of resources for a *request*.
+
+        :param perm: List of permuted resource indices for this
+            *request*, like [0, 1, 2] or [1, 2, 0].
+        :param request: Scheduler request object, some resources may
+            include regular expression syntax.
+        :type request: :class:`.ActiveRequest`
+        :param matches: List containing sets of the available
+            resources matching each element of *request.msg.resources*.
+        :returns: List of ``scheduler_msgs/Resource`` messages
+            allocated, in requested order with platform info fully
+            resolved; or ``[]`` if not everything is available.
+
+        If successful, matching ROCON resources are allocated to this
+        *request*.  Otherwise, the *request* remains unchanged.
+
+        """
+        # Copy the list of Resource messages and all their contents.
+        alloc = copy.deepcopy(request.msg.resources)
+
+        # Search in permutation order for some valid allocation.
+        names_allocated = set([])
+        for i in perm:
+            # try each matching name in order
+            for name in matches[i]:
+                if name not in names_allocated:  # still available?
+                    names_allocated.add(name)
+                    alloc[i].uri = name
+                    break               # go on to next resource
+            else:
+                return []               # failure: no matches work
+
+        # successful: allocate to this request
+        for resource in alloc:
+            self.pool[resource.uri].allocate(request)
+            self.changed = True
+        return alloc                    # success
+
+    def get(self, resource_name, default=None):
+        """ Get named pool resource, if known.
+
+        :param resource_name: Name of desired resource.
+        :type resource_name: str
+        :param default: value to return if no such resource.
+        :returns: named pool resource if successful, else *default*.
+        """
+        return self.pool.get(resource_name, default)
+
+    def known_resources(self):
+        """ Convert resource pool to ``scheduler_msgs/KnownResources``. """
+        msg = KnownResources()
+        for resource in self.pool.values():
+            msg.resources.append(resource.current_status())
+        self.changed = False
+        return msg
+
+    def match_list(self, resources, criteria):
+        """
+        Make a list containing sets of the available resources
+        matching each item in *resources*.
+
+        :param resources: List of Resource messages to match.
+        :param criteria: :class:`set` of resource status values allowed.
+
+        :returns: List of :class:`set` containing names of matching
+            resources, empty if any item cannot be satisfied, or there
+            are not enough resources, or the original *resources* list
+            was empty.
+        """
+        matches = []
+        for res_req in resources:
+            match_set = self._match_subset(res_req, criteria)
+            if len(match_set) == 0:     # no matches for this resource?
+                return []               # give up
+            matches.append(match_set)
+        if not matches:
+            return []                   # give up
+
+        # Each individual request can be satisfied, but there might
+        # not be enough to satisfy them all at once.  Verify that the
+        # union of the match sets contains as many resources as requested.
+        match_union = set(chain.from_iterable(matches))
+        if len(match_union) < len(resources):
+            return []                   # not enough stuff
+        return matches
+
+    def _match_subset(self, resource_msg, criteria):
+        """
+        Make a set of names of all available resources matching *resource_msg*.
+
+        :param resource_msg: Resource message from a scheduler Request.
+        :type resource_msg: ``scheduler_msgs/Resource``
+        :param criteria: :class:`set` of resource status values allowed.
+        :returns: :class:`set` containing matching resource names.
+        """
+        avail = set()
+        for res in self.pool.values():
+            if (res.status in criteria and res.match(resource_msg)):
+                avail.add(res.uri)
+        return avail
+
+    def release_request(self, request):
+        """ Release all the resources owned by this *request*.
+
+        :param request: Current owner of resources to release.
+        :type request: :class:`.ActiveRequest`
+
+        Only appropriate when this *request* is being closed.
+        """
+        rq_id = request.uuid
+        for res in request.allocations:
+            self.pool[res.uri].release(rq_id)
+            self.changed = True
+
+    def release_resources(self, resources):
+        """ Release a list of *resources*.
+
+        :param resources: List of ``scheduler_msgs/Resource`` messages.
+
+        This makes newly allocated *resources* available again when
+        they cannot be assigned to a request for some reason.
+        """
+        for res in resources:
+            pool_res = self.pool[res.uri]
+            pool_res.release()
+            self.changed = True
+
+    def update(self, client_list):
+        """ Update resource pool from a new concert clients list.
+
+        :param client_list: current list of ``ConcertClient`` messages.
+        """
+        clients_found = set()
+        for client in client_list:
+            uri = client.platform_info.uri
+            clients_found.add(uri)
+            if uri not in self.pool:    # not previously-known?
+                self.pool[uri] = self.pool_resource(client)
+                self.changed = True
+
+        # previously-known resources not in clients_found are missing
+        missing_clients = set(self.pool.keys()) - clients_found
+        for uri in missing_clients:
+            self.pool[uri].status = CurrentStatus.MISSING
+            self.changed = True

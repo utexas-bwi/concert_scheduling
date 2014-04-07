@@ -36,6 +36,11 @@
 This module handles the ROS interfaces for client resources managed by
 a scheduler for the `Robotics in Concert`_ (ROCON) project.
 
+It wraps the :mod:`resource_pool` classes, adding ROS topic and
+service interfaces to its basic resource pool allocation and release.
+Derived classes may override those interfaces with different resource
+allocation policies.
+
 Subscribes:
 
  * ``concert_client_changes`` (`concert_msgs/ConcertClients`_)
@@ -58,7 +63,38 @@ from scheduler_msgs.msg import KnownResources
 from .rapp_handler import (
     FailedToStartRappError, FailedToStopRappError, RappHandler)
 from .resource_pool import (
-    CurrentStatus, InvalidRequestError, ResourcePool)
+    CurrentStatus, InvalidRequestError, PoolResource, ResourcePool)
+
+
+class SchedulerResource(PoolResource):
+    """ Scheduler clients interface.
+
+    :param lock: The big scheduler serialization lock.
+    :param resource_pool: resource pool class to use, must provide a
+        compatible :class:`.ResourcePool` interface.
+
+    Provides all attributes defined for the base *resource_pool*
+    class, plus these:
+    """
+    def __init__(self, lock, pool_resource=PoolResource):
+        self.pool_resource = pool_resource
+        """ Associated *pool_resource* instance. """
+        self.rapp_handler = RappHandler(msg)
+        """ Handler for starting and stopping rapps on this resource. """
+
+    def release(self, request_id=None):
+        """ Release this resource and stop any running rapps.
+
+        :param request_id: Optional owning request.
+        :type request_id: :class:`uuid.UUID` or ``None``
+
+        :raises: :exc:`.ResourceNotOwnedError` if *request_id* is
+            specified and is not the owner.
+        :raises: :exc:`.FailedToStopRappError` if the associated
+            client rapp does stop when requested.
+        """
+        super(SchedulerResource, self).release(request_id)
+        self.rapp_handler.stop()        # stop any running rapps
 
 
 class SchedulerClients(ResourcePool):
@@ -71,12 +107,14 @@ class SchedulerClients(ResourcePool):
     Provides all attributes defined for the base *resource_pool*
     class, plus these:
     """
-    def __init__(self, lock, resource_pool=ResourcePool):
+    def __init__(self, lock,
+                 resource_pool=ResourcePool,
+                 pool_resource=PoolResource):
         """ Constructor. """
         super(SchedulerClients, self).__init__()
         self.lock = lock
         """ Big scheduler lock for serializing updates. """
-        self.resource_pool = resource_pool
+        self.resource_pool = resource_pool(pool_resource=pool_resource)
         """ Associated *resource_pool* instance. """
         self._pub = rospy.Publisher('resource_pool', KnownResources,
                                     queue_size=1, latch=True)
@@ -89,6 +127,18 @@ class SchedulerClients(ResourcePool):
         """ Update ``resource_pool`` topic, if anything changed. """
         if self.changed:
             self._pub.publish(self.known_resources())
+
+    def start_resources(self, resources):
+        """ Start rapps specified by the resources list.
+
+        :param resources: List of ``scheduler_msgs/Resource`` messages.
+
+        :raises: :exc:`.FailedToStartRappError`
+        """
+        for res in resources:
+            pool_res = self.pool[res.uri]
+            pool_res.rapp_handler.start(res.rapp, res.remappings)
+
 
     def track_clients(self, msg):
         """ Concert clients message callback.
