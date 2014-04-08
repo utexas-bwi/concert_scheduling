@@ -117,7 +117,7 @@ def rocon_name(uri):
     return retval
 
 
-class PoolResource:
+class PoolResource(object):
     """
     Base class for tracking the status of a single ROCON_ resource.
 

@@ -69,18 +69,16 @@ from .resource_pool import (
 class SchedulerResource(PoolResource):
     """ Scheduler clients interface.
 
-    :param lock: The big scheduler serialization lock.
-    :param resource_pool: resource pool class to use, must provide a
-        compatible :class:`.ResourcePool` interface.
+    :param msg: ROCON resource description message.
+    :type msg: ``concert_msgs/ConcertClient``
 
-    Provides all attributes defined for the base *resource_pool*
+    Provides all attributes defined for the base *pool_resource*
     class, plus these:
     """
-    def __init__(self, lock, pool_resource=PoolResource):
-        self.pool_resource = pool_resource
-        """ Associated *pool_resource* instance. """
+    def __init__(self, msg):
         self.rapp_handler = RappHandler(msg)
         """ Handler for starting and stopping rapps on this resource. """
+        super(SchedulerResource, self).__init__(msg)
 
     def release(self, request_id=None):
         """ Release this resource and stop any running rapps.
@@ -94,7 +92,10 @@ class SchedulerResource(PoolResource):
             client rapp does stop when requested.
         """
         super(SchedulerResource, self).release(request_id)
-        self.rapp_handler.stop()        # stop any running rapps
+        try:
+            self.rapp_handler.stop()    # stop any running rapps
+        except FailedToStopRappError as e:
+            rospy.logerr(str(e))
 
 
 class SchedulerClients(ResourcePool):
@@ -109,13 +110,11 @@ class SchedulerClients(ResourcePool):
     """
     def __init__(self, lock,
                  resource_pool=ResourcePool,
-                 pool_resource=PoolResource):
+                 pool_resource=SchedulerResource):
         """ Constructor. """
-        super(SchedulerClients, self).__init__()
+        super(SchedulerClients, self).__init__(pool_resource=pool_resource)
         self.lock = lock
         """ Big scheduler lock for serializing updates. """
-        self.resource_pool = resource_pool(pool_resource=pool_resource)
-        """ Associated *resource_pool* instance. """
         self._pub = rospy.Publisher('resource_pool', KnownResources,
                                     queue_size=1, latch=True)
         self._pub.publish(self.known_resources())
@@ -138,7 +137,6 @@ class SchedulerClients(ResourcePool):
         for res in resources:
             pool_res = self.pool[res.uri]
             pool_res.rapp_handler.start(res.rapp, res.remappings)
-
 
     def track_clients(self, msg):
         """ Concert clients message callback.

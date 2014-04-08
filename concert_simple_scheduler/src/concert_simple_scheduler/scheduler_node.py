@@ -49,11 +49,11 @@ import rospy
 from concert_scheduler_requests import Scheduler, TransitionError
 from concert_scheduler_requests.priority_queue import (
     PriorityQueue, QueueElement)
-from scheduler_msgs.msg import Request
+from scheduler_msgs.msg import CurrentStatus, Request
 
-from concert_resource_pool.resource_pool import (
-    CurrentStatus, InvalidRequestError, ResourcePool)
-from concert_resource_pool.scheduler_clients import SchedulerClients
+from concert_resource_pool import (
+    FailedToStartRappError, InvalidRequestError,
+    ResourcePool, SchedulerClients)
 
 
 class SimpleSchedulerNode(object):
@@ -84,8 +84,8 @@ class SimpleSchedulerNode(object):
             self.sch = Scheduler(self.callback, topic=topic_name)
         except KeyError:
             self.sch = Scheduler(self.callback)  # use the default
-        self.clients = SchedulerClients(self.sch.lock, ResourcePool)
-        """ Known ROCON clients. """
+        self.pool = SchedulerClients(self.sch.lock)
+        """ Resource pool of known ROCON clients. """
 
         # Handle messages until canceled.
         rospy.spin()
@@ -117,7 +117,7 @@ class SimpleSchedulerNode(object):
             elem = self.ready_queue.pop()
             resources = []
             try:
-                resources = self.clients.allocate(elem.request)
+                resources = self.pool.allocate(elem.request)
             except InvalidRequestError as ex:
                 self.reject_request(elem, ex)
                 continue                # skip to next queue element
@@ -128,19 +128,20 @@ class SimpleSchedulerNode(object):
                 break                   # stop looking
 
             try:
+                self.pool.start_resources(resources)
                 elem.request.grant(resources)
-                rospy.loginfo(
-                    'Request granted: ' + str(elem.request.uuid))
-            except TransitionError:     # request no longer active?
+                rospy.loginfo('Request granted: ' + str(elem.request.uuid))
+            except (FailedToStartRappError, TransitionError) as e:
                 # Return allocated resources to the pool.
-                self.clients.release_resources(resources)
+                rospy.logerr(str(e))
+                self.pool.release_resources(resources)
             self.notification_set.add(elem.requester_id)
 
         # notify all affected requesters
         self.notify_requesters()
 
         # notify of resource pool changes, if necessary
-        self.clients.notify_resources()
+        self.pool.notify_resources()
 
     def free(self, request, requester_id):
         """ Free all resources allocated for this *request*.
@@ -148,7 +149,7 @@ class SimpleSchedulerNode(object):
         :param request: (:class:`.ActiveRequest`)
         :param requester_id: (:class:`uuid.UUID`) Unique requester identifier.
         """
-        self.clients.release_request(request)
+        self.pool.release_request(request)
         rospy.loginfo('Request canceled: ' + str(request.uuid))
         request.close()
         # remove request from any queues
@@ -223,8 +224,7 @@ class SimpleSchedulerNode(object):
                 # see if all available or allocated resources would suffice
                 criteria = {CurrentStatus.AVAILABLE,
                             CurrentStatus.ALLOCATED}
-                if self.clients.match_list(elem.request.msg.resources,
-                                           criteria):
+                if self.pool.match_list(elem.request.msg.resources, criteria):
                     # request not blocked
                     self.ready_queue.add(elem)
                     break               # done rescheduling
