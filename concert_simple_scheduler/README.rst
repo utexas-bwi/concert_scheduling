@@ -1,27 +1,25 @@
 Overview
 ========
 
-The ``concert_simple_scheduler`` ROS_ package provides a Python
+Because different systems require different scheduling policies, the
+ROCON design allows for multiple scheduler implementations.  The
+scheduler runs as a ROS node on same master as the ROCON Conductor,
+services and other Solution components.
+
+The `concert_simple_scheduler`_ ROS_ package provides a Python
 implementation of a scheduler node for managing scheduler requests
-within the `Robotics in Concert`_ (ROCON) framework.
+within the `Robotics in Concert`_ (ROCON) framework.  It uses some
+common infrastructure packages that other scheduler implementations
+can use or modify
 
 *This implementation is still experimental.*  
-
-Because different systems require different scheduling policies, the
-ROCON design allows for multiple scheduler implementations.  This
-package supplies a simple fixed-priority scheduler and some common
-infrastructure package that other scheduler implementations can use or
-modify.
 
 ROS simple_scheduler node
 -------------------------
 
-The ROCON scheduler runs as a ROS node on same master as the ROCON
-conductor, the rocon services and other Solution components.
-
-This implementation provides a relatively simple fixed-priority
-scheduler which allocates resources within each priority on a
-first-come, first-served basis.
+This node provides a relatively simple fixed-priority scheduler which
+allocates resources within each priority on a first-come, first-served
+basis.
 
 Subscribed topics
 '''''''''''''''''
@@ -31,8 +29,8 @@ Subscribed topics
     messages to the ``rocon_scheduler`` topic is called a
     **requester**.
 
-``concert_client_changes`` (`concert_msgs/ConcertClients`_) ROCON
-    clients known to the Conductor.
+``concert_client_changes`` (`concert_msgs/ConcertClients`_)
+    ROCON clients known to the Conductor.
 
 
 Published topics
@@ -46,6 +44,14 @@ Published topics
 
 ``resource_pool`` (`scheduler_msgs/KnownResources`_)
     The status of all ROCON clients currently managed by this scheduler.
+
+Parameters
+''''''''''
+
+``~topic_name`` (string, default: rocon_scheduler)
+    Common name prefix to use for the request and feedback
+    topics. Since the feedback topic is generated dynamically, it
+    would otherwise be difficult to remap.
 
 Protocol
 ''''''''
@@ -71,6 +77,7 @@ Usage
    https://github.com/robotics-in-concert/rocon_msgs/blob/hydro-devel/concert_msgs/msg/ConcertClients.msg
 .. _`Robotics in Concert`: http://www.robotconcert.org/wiki/Main_Page
 .. _`concert_scheduler_requests`: http://wiki.ros.org/concert_scheduler_requests
+.. _`concert_simple_scheduler`: http://wiki.ros.org/concert_simple_scheduler
 .. _ROS: http://wiki.ros.org
 .. _`scheduler_msgs/KnownResources`:
    http://docs.ros.org/api/scheduler_msgs/html/msg/KnownResources.html
