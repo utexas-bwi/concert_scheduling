@@ -35,6 +35,9 @@
   <build_depend>rostest</build_depend>
   <test_depend>rosunit</test_depend>
 
+  <!-- documentation dependencies -->
+  <build_depend>python-catkin-pkg</build_depend>
+
   <export>
     <rosdoc config="rosdoc.yaml" />
   </export>

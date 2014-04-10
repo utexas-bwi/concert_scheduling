@@ -10,7 +10,7 @@ The `concert_simple_scheduler`_ ROS_ package provides a Python
 implementation of a scheduler node for managing scheduler requests
 within the `Robotics in Concert`_ (ROCON) framework.  It uses some
 common infrastructure packages that other scheduler implementations
-can use or modify
+can use or modify.
 
 *This implementation is still experimental.*  
 
