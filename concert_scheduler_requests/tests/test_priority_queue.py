@@ -147,6 +147,16 @@ class TestQueueElement(unittest.TestCase):
         list2.sort()                    # sort in-place
         self.assertEqual(list2, [qe1, qe2])
 
+    def test_str(self):
+        qe1 = QueueElement(ROBERTO_REQUEST, RQR_ID)
+        qe1.active = False
+        self.assertMultiLineEqual(str(qe1), '')
+        qe2 = QueueElement(MARVIN_REQUEST, RQR_ID)
+        self.assertMultiLineEqual(
+            str(qe2),
+            'id: ' + str(RQR_ID) + '\n  seq: ' + str(qe2.sequence)
+            + '\n  request: ' + str(qe2.request))
+
 
 ###############################
 # priority queue tests
@@ -186,6 +196,7 @@ class TestPriorityQueue(unittest.TestCase):
         self.assertRaises(IndexError, pq0.pop)
         self.assertNotIn(RQ1_UUID, pq0)
         self.assertNotIn(RQ2_UUID, pq0)
+        self.assertMultiLineEqual(str(pq0), 'queue: ')
 
     def test_one_request_constructor(self):
         elem = QueueElement(ROBERTO_REQUEST, RQR_ID)
@@ -194,6 +205,8 @@ class TestPriorityQueue(unittest.TestCase):
         self.assertNotIn(RQ1_UUID, pq)
         self.assertIn(RQ2_UUID, pq)
         self.assertIn(elem, pq)
+        self.assertMultiLineEqual(str(pq), 'queue: '
+                                  + '\n ' + str(elem))
         rq1 = pq.pop()
         self.assertEqual(len(pq), 0)
         self.assertMultiLineEqual(str(rq1.request), str(ROBERTO_REQUEST))
@@ -240,16 +253,22 @@ class TestPriorityQueue(unittest.TestCase):
         self.assertEqual(len(pq), 2)
         self.assertIs(pq.peek().request, ROBERTO_REQUEST)
         self.assertEqual(pq.peek(), roberto)
+        self.assertMultiLineEqual(str(pq), 'queue: '
+                                  + '\n ' + str(roberto)
+                                  + '\n ' + str(marvin))
 
         rq1 = pq.pop()
         self.assertEqual(len(pq), 1)
         self.assertIs(rq1.request, ROBERTO_REQUEST)
         self.assertIs(pq.peek().request, MARVIN_REQUEST)
         self.assertEqual(pq.peek(), marvin)
+        self.assertMultiLineEqual(str(pq), 'queue: '
+                                  + '\n ' + str(marvin))
 
         rq2 = pq.pop()
         self.assertEqual(len(pq), 0)
         self.assertIs(rq2.request, MARVIN_REQUEST)
+        self.assertMultiLineEqual(str(pq), 'queue: ')
 
 if __name__ == '__main__':
     import rosunit

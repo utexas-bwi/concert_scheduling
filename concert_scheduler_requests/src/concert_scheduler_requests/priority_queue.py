@@ -83,6 +83,14 @@ class PriorityQueue(object):
     def __len__(self):
         return len(self._requests)
 
+    def __str__(self):
+        contents = sorted(copy.copy(self._queue))
+        rval = 'queue: '
+        for elem in contents:
+            if elem.active:
+                rval += '\n ' + str(elem)
+        return rval
+
     def add(self, element, priority=None):
         """ Add a new *element* to the queue.
 
@@ -194,6 +202,11 @@ class QueueElement(object):
     should ever compare both equal and less, although that situation
     could be constructed artificially.
 
+    .. describe:: str(element)
+
+       :returns: String representation of this queue element, empty if
+           it is not active.
+
     """
     _sequence = itertools.count()
     """ Class variable: next available sequence number. """
@@ -225,3 +238,11 @@ class QueueElement(object):
 
     def __ne__(self, other):
         return self.request.msg.id != other.request.msg.id
+
+    def __str__(self):
+        """ Generate string representation. """
+        if not self.active:
+            return ''
+        return 'id: ' + str(self.requester_id) \
+            + '\n  seq: ' + str(self.sequence) \
+            + '\n  request: ' + str(self.request)
