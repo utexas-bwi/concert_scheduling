@@ -1,13 +1,16 @@
 # list of client data containing three turtlebots
   -
     name: roberto
+    gateway_name: roberto_gate
     uri: rocon:/turtlebot/roberto
     rapps: [tests/example_rapp, rocon_apps/teleop]
   -
     name: calculon
+    gateway_name: calculon_gate
     uri: rocon:/turtlebot/calculon
     rapps: [tests/example_rapp, rocon_apps/teleop]
   -
     name: bender
+    gateway_name: bender_gate
     uri: rocon:/turtlebot/bender
     rapps: [tests/example_rapp, rocon_apps/teleop]

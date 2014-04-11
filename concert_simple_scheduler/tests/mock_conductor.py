@@ -8,6 +8,8 @@ import rospy
 import rospkg
 import yaml
 from rocon_app_manager_msgs.msg import App
+from rocon_app_manager_msgs.srv import (
+    StartApp, StartAppResponse, StopApp, StopAppResponse)
 from rocon_std_msgs.msg import PlatformInfo
 from concert_msgs.msg import ConcertClient, ConcertClients
 try:
@@ -27,13 +29,51 @@ def url_filename(url):
         raise ValueError('invalid resources URL: ' + url)
 
 
-class MockConductor():
+class MockGateway(object):
+    """ Representation of a Concert Gateway. """
+    def __init__(self, concert_client):
+        self.started = False
+        self.client = concert_client
+        self.rapps = set()
+        """ Set of rapps supported at this gateway. """
+        for rapp in self.client.apps:
+            self.rapps.add(rapp.name)
+        namespace = '/' + self.client.gateway_name
+        self.start_service = rospy.Service(namespace + '/start_app',
+                                           StartApp, self.start)
+        self.stop_service = rospy.Service(namespace + '/stop_app',
+                                          StopApp, self.stop)
+
+    def start(self, req):
+        """ StartApp service handler. """
+        resp = StartAppResponse(started=True,
+                                app_namespace=self.client.gateway_name)
+        if self.started == True:
+            resp.message = 'Rapp already started: ' + self.client.gateway_name
+            rospy.logerr(resp.message)
+            resp.started = False
+        elif req.name not in self.rapps:
+            resp.message = 'Unknown rapp : ' + req.name
+            rospy.logerr(resp.message)
+            resp.started = False
+        else:
+            self.started = True
+        return resp
+
+    def stop(self, req):
+        """ StopApp service handler. """
+        self.started = False
+        return StopAppResponse(stopped=True)
+
+
+class MockConductor(object):
 
     def __init__(self):
         """ Constructor. """
         rospy.init_node('mock_conductor')
         self.pub = rospy.Publisher('concert_client_changes',
                                    ConcertClients, queue_size=1, latch=True)
+        self.gateways = {}              # dictionary of gateways
         rospy.sleep(1.0)                # let publisher initialize
         try:
             self.send_resources()
@@ -46,10 +86,11 @@ class MockConductor():
         """ Send resources on latched concert client topic. """
         url = rospy.get_param(
             '~resources_url',
-            'package://concert_simple_scheduler/tests/params/clients1.yaml')
+            'package://concert_simple_scheduler/tests/params/clients2.yaml')
         rospy.loginfo('resources URL: ' + url)
         yaml_name = url_filename(url)
         rospy.logdebug(yaml_name)
+        resources = []
         with open(yaml_name, 'rt') as f:
             resources = yaml.load(f)
             if resources is None:
@@ -61,7 +102,18 @@ class MockConductor():
                  platform_info = PlatformInfo(uri=res['uri']))
              for rapp in res['rapps']:
                  ccl.apps.append(App(name=rapp))
+
+             gw = res.get('gateway_name')
+             if gw is None:
+                 # ignore missing gateway name
+                 rospy.logwarn(ccl.name + ': gateway name missing, ' +
+                               'no start or stop services')
+             elif gw not in self.gateways:
+                 ccl.gateway_name = gw
+                 self.gateways[gw] = MockGateway(ccl)
+
              msg.clients.append(ccl)
+
         self.pub.publish(msg)
 
 

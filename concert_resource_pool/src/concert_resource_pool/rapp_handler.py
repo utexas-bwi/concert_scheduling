@@ -22,7 +22,8 @@ publishers.
 ##############################################################################
 
 import rospy
-import rocon_app_manager_msgs.srv as rapp_manager_srvs
+from rocon_app_manager_msgs.srv import (
+    StartApp, StartAppRequest, StopApp, StopAppRequest)
 
 
 ##############################################################################
@@ -71,12 +72,10 @@ class RappHandler(object):
         self.gateway_name = msg.gateway_name
         self.uri = msg.platform_info.uri
         self.rapps = [rapp.name for rapp in msg.apps]
-        self.start_rapp = rospy.ServiceProxy('/' + self.gateway_name
-                                             + '/start_app',
-                                             rapp_manager_srvs.StartApp)
-        self.stop_rapp = rospy.ServiceProxy('/' + self.gateway_name
-                                            + '/stop_app',
-                                            rapp_manager_srvs.StopApp)
+        self.start_rapp = rospy.ServiceProxy(
+            '/' + self.gateway_name + '/start_app', StartApp)
+        self.stop_rapp = rospy.ServiceProxy(
+            '/' + self.gateway_name + '/stop_app', StopApp)
 
     def start(self, rapp, remappings):
         """
@@ -87,11 +86,8 @@ class RappHandler(object):
 
         :raises: :exc:`.FailedToStartRappError`
         """
-        request = rapp_manager_srvs.StartAppRequest()
-        request.name = rapp
-        request.remappings = remappings
         try:
-            self.start_rapp(request)
+            self.start_rapp(StartAppRequest(name=rapp, remappings=remappings))
         except (rospy.service.ServiceException,
                 rospy.exceptions.ROSInterruptException) as e:
             # Service not found or ros is shutting down
@@ -103,9 +99,8 @@ class RappHandler(object):
         doesn't need a rapp specification since only one rapp can ever be
         running - it will just stop the currently running rapp.
         """
-        request = rapp_manager_srvs.StopAppRequest()
         try:
-            self.stop_rapp(request)
+            self.stop_rapp(StopAppRequest())
         except (rospy.service.ServiceException,
                 rospy.exceptions.ROSInterruptException) as e:
             # Service not found or ros is shutting down
