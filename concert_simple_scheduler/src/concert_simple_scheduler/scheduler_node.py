@@ -112,6 +112,7 @@ class SimpleSchedulerNode(object):
 
         Notifies all affected requesters.
         """
+        rospy.loginfo('dispatch ready ' + str(self.ready_queue))
         while len(self.ready_queue) > 0:
             # Try to allocate top element in the ready queue.
             elem = self.ready_queue.pop()
@@ -217,24 +218,26 @@ class SimpleSchedulerNode(object):
         operations done within the scheduler callback thread.
         """
         with self.sch.lock:
-            while len(self.ready_queue) > 0:
-                # see if head of ready queue can be scheduled
-                elem = self.ready_queue.pop()
-
-                # see if all available or allocated resources would suffice
-                criteria = {CurrentStatus.AVAILABLE,
-                            CurrentStatus.ALLOCATED}
-                if self.pool.match_list(elem.request.msg.resources, criteria):
-                    # request not blocked
-                    self.ready_queue.add(elem)
-                    break               # done rescheduling
-
-                # move elem to blocked_queue
-                rospy.loginfo('Request blocked: '
-                              + str(elem.request.uuid))
-                elem.request.wait(reason=Request.UNAVAILABLE)
-                self.blocked_queue.add(elem)
-                self.notification_set.add(elem.requester_id)
+            #rospy.loginfo('reschedule ready ' + str(self.ready_queue))
+            #while len(self.ready_queue) > 0:
+            #    # see if head of ready queue can be scheduled
+            #    elem = self.ready_queue.pop()
+            #
+            #    # see if all available or allocated resources would suffice
+            #    criteria = {CurrentStatus.AVAILABLE,
+            #                CurrentStatus.ALLOCATED}
+            #    if self.pool.match_list(elem.request.msg.resources, criteria):
+            #        # request not blocked
+            #        self.ready_queue.add(elem)
+            #        break               # done rescheduling
+            #
+            #    # move elem to blocked_queue
+            #    rospy.loginfo('Request blocked: '
+            #                  + str(elem.request.uuid))
+            #    elem.request.wait(reason=Request.UNAVAILABLE)
+            #    self.blocked_queue.add(elem)
+            #    self.notification_set.add(elem.requester_id)
+            #rospy.loginfo('reschedule blocked ' + str(self.blocked_queue))
 
             # try to allocate any remaining ready requests
             self.dispatch()
