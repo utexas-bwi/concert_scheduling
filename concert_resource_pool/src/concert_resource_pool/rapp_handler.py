@@ -82,7 +82,7 @@ class RappHandler(object):
         Start the rapp with the specified remappings.
 
         :param rapp str: name of the rapp to start (e.g. rocon_apps/teleop)
-        :param remappings ??: remappings to apply to the rapp when starting.
+        :param remappings rocon_std_msgs/Remapping[]: remappings to apply to the rapp when starting.
 
         :raises: :exc:`.FailedToStartRappError`
         """
