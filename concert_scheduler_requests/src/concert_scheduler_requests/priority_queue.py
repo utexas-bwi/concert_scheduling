@@ -153,7 +153,6 @@ class PriorityQueue(object):
 
     def values(self):
         """ Current queue contents.
-        
         :returns: iterable with active queue elements in random order.
         """
         return self._requests.values()
