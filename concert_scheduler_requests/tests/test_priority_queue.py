@@ -197,6 +197,7 @@ class TestPriorityQueue(unittest.TestCase):
         self.assertNotIn(RQ1_UUID, pq0)
         self.assertNotIn(RQ2_UUID, pq0)
         self.assertMultiLineEqual(str(pq0), 'queue: ')
+        self.assertEqual(pq0.values(), [])
 
     def test_one_request_constructor(self):
         elem = QueueElement(ROBERTO_REQUEST, RQR_ID)
@@ -207,9 +208,11 @@ class TestPriorityQueue(unittest.TestCase):
         self.assertIn(elem, pq)
         self.assertMultiLineEqual(str(pq), 'queue: '
                                   + '\n ' + str(elem))
+        self.assertEqual(pq.values(), [elem])
         rq1 = pq.pop()
         self.assertEqual(len(pq), 0)
         self.assertMultiLineEqual(str(rq1.request), str(ROBERTO_REQUEST))
+        self.assertEqual(pq.values(), [])
 
     def test_pop_one_request(self):
         pq = PriorityQueue()
@@ -239,6 +242,7 @@ class TestPriorityQueue(unittest.TestCase):
         roberto = QueueElement(ROBERTO_REQUEST, RQR_ID)
         pq.add(roberto)
         self.assertEqual(len(pq), 2)
+
         pq.remove(RQ1_UUID)
         self.assertIs(pq.peek().request, ROBERTO_REQUEST)
         self.assertEqual(pq.peek(), roberto)
@@ -247,6 +251,7 @@ class TestPriorityQueue(unittest.TestCase):
 
     def test_two_request_constructor(self):
         # BUG: #18 this queue is LIFO, not FIFO
+        # (because priority of ROBERTO_REQUEST changed earlier)
         marvin = QueueElement(MARVIN_REQUEST, RQR_ID)
         roberto = QueueElement(ROBERTO_REQUEST, RQR_ID)
         pq = PriorityQueue([marvin, roberto])
@@ -256,6 +261,9 @@ class TestPriorityQueue(unittest.TestCase):
         self.assertMultiLineEqual(str(pq), 'queue: '
                                   + '\n ' + str(roberto)
                                   + '\n ' + str(marvin))
+        for queue_elem, list_elem in zip(sorted(pq.values()),
+                                         sorted([marvin, roberto])):
+            self.assertEqual(queue_elem, list_elem)
 
         rq1 = pq.pop()
         self.assertEqual(len(pq), 1)
@@ -264,11 +272,13 @@ class TestPriorityQueue(unittest.TestCase):
         self.assertEqual(pq.peek(), marvin)
         self.assertMultiLineEqual(str(pq), 'queue: '
                                   + '\n ' + str(marvin))
+        self.assertEqual(pq.values(), [marvin])
 
         rq2 = pq.pop()
         self.assertEqual(len(pq), 0)
         self.assertIs(rq2.request, MARVIN_REQUEST)
         self.assertMultiLineEqual(str(pq), 'queue: ')
+        self.assertEqual(pq.values(), [])
 
 if __name__ == '__main__':
     import rosunit

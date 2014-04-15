@@ -84,11 +84,10 @@ class PriorityQueue(object):
         return len(self._requests)
 
     def __str__(self):
-        contents = sorted(copy.copy(self._queue))
+        contents = sorted(self.values())
         rval = 'queue: '
         for elem in contents:
-            if elem.active:
-                rval += '\n ' + str(elem)
+            rval += '\n ' + str(elem)
         return rval
 
     def add(self, element, priority=None):
@@ -152,6 +151,13 @@ class PriorityQueue(object):
         element = self._requests.pop(hash(request_id))
         element.active = False
 
+    def values(self):
+        """ Current queue contents.
+        
+        :returns: iterable with active queue elements in random order.
+        """
+        return self._requests.values()
+
 
 class QueueElement(object):
     """ Request queue element class.
@@ -213,7 +219,7 @@ class QueueElement(object):
 
     def __init__(self, request, requester_id):
         self.request = request
-        """ Corresponding scheduler request :class:`ActiveRequest` object. """
+        """ Corresponding scheduler :class:`ActiveRequest` object. """
         self.requester_id = requester_id
         """ :class:`uuid.UUID` of requester. """
         self.sequence = next(self.__class__._sequence)
