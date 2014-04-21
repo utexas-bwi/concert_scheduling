@@ -49,7 +49,8 @@ import unique_id
 
 ## ROS messages
 from scheduler_msgs.msg import CurrentStatus, KnownResources, Resource
-
+from concert_msgs.msg import Constants
+STATUS_CONNECTED = Constants.CONCERT_CLIENT_STATUS_CONNECTED
 
 ## Exceptions
 class InvalidRequestError(Exception):
@@ -515,6 +516,16 @@ class ResourcePool(object):
             clients_found.add(uri)
             if uri not in self.pool:    # not previously-known?
                 self.pool[uri] = self.pool_resource(client)
+                self.changed = True
+            pool_res = self.pool[uri]
+            if client.client_status != STATUS_CONNECTED:
+                pool_res.status = CurrentStatus.MISSING
+                self.changed = True
+            elif pool_res.status == CurrentStatus.MISSING:
+                if pool_res.owned:
+                    pool_res.status = CurrentStatus.ALLOCATED
+                else:
+                    pool_res.status = CurrentStatus.AVAILABLE
                 self.changed = True
 
         # Previously-known resources not in clients_found are GONE,

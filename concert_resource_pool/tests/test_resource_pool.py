@@ -355,7 +355,6 @@ class TestResourcePool(unittest.TestCase):
         self.assertNotIn(ROBERTO_NAME, pool)
         self.assertTrue(pool.changed)
 
-    @unittest.skip('not implemented yet')
     def test_one_update_missing(self):
         pool = ResourcePool(SINGLETON_POOL)
         self.assertEqual(len(pool), 1)
@@ -385,6 +384,7 @@ class TestResourcePool(unittest.TestCase):
                 ConcertClient(
                     name='roberto',
                     platform_info=PlatformInfo(uri=ROBERTO_NAME),
+                    client_status = 'connected',
                     apps=[App(name=TELEOP_RAPP),
                           App(name=EXAMPLE_RAPP)])])
         self.assertEqual(len(pool), 1)
