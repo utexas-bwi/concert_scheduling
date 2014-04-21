@@ -223,17 +223,38 @@ class TestPriorityQueue(unittest.TestCase):
 
     def test_priority_update(self):
         pq = PriorityQueue()
-        pq.add(QueueElement(MARVIN_REQUEST, RQR_ID))
-        mod_req = copy.deepcopy(ROBERTO_REQUEST)
-        pq.add(QueueElement(mod_req, RQR_ID))
+        req1 = MARVIN_REQUEST
+        pq.add(QueueElement(req1, RQR_ID))
+
+        req2 = copy.deepcopy(ROBERTO_REQUEST)
+        qe_changed = QueueElement(req2, RQR_ID)
+        pq.add(qe_changed)
         self.assertEqual(len(pq), 2)
-        pq.add(QueueElement(mod_req, RQR_ID), priority=10)
+        self.assertIs(pq.peek().request, req1)
+
+        # move req2 to head of queue
+        pq.add(qe_changed, priority=10)
         self.assertEqual(len(pq), 2)
-        qe = pq.pop()
+        self.assertEqual(pq.peek(), qe_changed)
+        self.assertIsNot(pq.peek(), qe_changed) # new queue element object
+        self.assertIs(pq.peek().request, req2)  # same request
+
+        # move req2 to tail of queue
+        pq.add(qe_changed, priority=-10)
+        self.assertEqual(len(pq), 2)
+        self.assertIs(pq.peek().request, req1)
+
+        qe1 = pq.pop()
         self.assertEqual(len(pq), 1)
-        self.assertEqual(qe.request.uuid, RQ2_UUID)
-        self.assertEqual(qe.request.msg.priority, 10)
-        self.assertEqual(qe.request.msg.resources[0].uri, ROBERTO_NAME)
+        self.assertIs(qe1.request, req1)
+
+        qe2 = pq.pop()
+        self.assertEqual(len(pq), 0)
+        self.assertIs(qe2.request, req2)
+        self.assertIsNot(qe2, qe_changed)
+        self.assertEqual(qe2.request.uuid, RQ2_UUID)
+        self.assertEqual(qe2.request.msg.priority, -10)
+        self.assertEqual(qe2.request.msg.resources[0].uri, ROBERTO_NAME)
 
     def test_remove_one_request(self):
         # BUG: #18 this queue is LIFO, not FIFO
