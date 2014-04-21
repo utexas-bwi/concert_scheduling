@@ -99,11 +99,15 @@ class PriorityQueue(object):
         :type priority: int
 
         If a request with the same identifier was already in the
-        queue, it is removed and replaced by the new *element*,
-        perhaps with a new *priority*.  That is the only safe way to
-        change the *priority* of an *element* that is already queued.
-        Changing it via some other name for that request will break
-        the queue implementation.
+        queue, its old element is removed and replaced by the new
+        *element*.
+
+        If a new *priority* is specified, the priority of the original
+        request is updated.  That is the only safe way to change the
+        priority of an *element* that is already queued.
+
+        .. warning:: Changing priority via some other name for that
+           request would break the queue implementation.
         """
         if hash(element) in self._requests:  # already in the queue?
             self.remove(element)        # mark that copy inactive
