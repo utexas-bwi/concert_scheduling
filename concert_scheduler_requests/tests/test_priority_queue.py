@@ -224,9 +224,10 @@ class TestPriorityQueue(unittest.TestCase):
     def test_priority_update(self):
         pq = PriorityQueue()
         pq.add(QueueElement(MARVIN_REQUEST, RQR_ID))
-        pq.add(QueueElement(ROBERTO_REQUEST, RQR_ID))
+        mod_req = copy.deepcopy(ROBERTO_REQUEST)
+        pq.add(QueueElement(mod_req, RQR_ID))
         self.assertEqual(len(pq), 2)
-        pq.add(QueueElement(ROBERTO_REQUEST, RQR_ID), priority=10)
+        pq.add(QueueElement(mod_req, RQR_ID), priority=10)
         self.assertEqual(len(pq), 2)
         qe = pq.pop()
         self.assertEqual(len(pq), 1)
@@ -250,33 +251,31 @@ class TestPriorityQueue(unittest.TestCase):
         self.assertMultiLineEqual(str(pq.pop().request), str(ROBERTO_REQUEST))
 
     def test_two_request_constructor(self):
-        # BUG: #18 this queue is LIFO, not FIFO
-        # (because priority of ROBERTO_REQUEST changed earlier)
         marvin = QueueElement(MARVIN_REQUEST, RQR_ID)
         roberto = QueueElement(ROBERTO_REQUEST, RQR_ID)
         pq = PriorityQueue([marvin, roberto])
         self.assertEqual(len(pq), 2)
-        self.assertIs(pq.peek().request, ROBERTO_REQUEST)
-        self.assertEqual(pq.peek(), roberto)
+        self.assertIs(pq.peek().request, MARVIN_REQUEST)
+        self.assertEqual(pq.peek(), marvin)
         self.assertMultiLineEqual(str(pq), 'queue: '
-                                  + '\n ' + str(roberto)
-                                  + '\n ' + str(marvin))
+                                  + '\n ' + str(marvin)
+                                  + '\n ' + str(roberto))
         for queue_elem, list_elem in zip(sorted(pq.values()),
                                          sorted([marvin, roberto])):
             self.assertEqual(queue_elem, list_elem)
 
         rq1 = pq.pop()
         self.assertEqual(len(pq), 1)
-        self.assertIs(rq1.request, ROBERTO_REQUEST)
-        self.assertIs(pq.peek().request, MARVIN_REQUEST)
-        self.assertEqual(pq.peek(), marvin)
+        self.assertIs(rq1.request, MARVIN_REQUEST)
+        self.assertIs(pq.peek().request, ROBERTO_REQUEST)
+        self.assertEqual(pq.peek(), roberto)
         self.assertMultiLineEqual(str(pq), 'queue: '
-                                  + '\n ' + str(marvin))
-        self.assertEqual(pq.values(), [marvin])
+                                  + '\n ' + str(roberto))
+        self.assertEqual(pq.values(), [roberto])
 
         rq2 = pq.pop()
         self.assertEqual(len(pq), 0)
-        self.assertIs(rq2.request, MARVIN_REQUEST)
+        self.assertIs(rq2.request, ROBERTO_REQUEST)
         self.assertMultiLineEqual(str(pq), 'queue: ')
         self.assertEqual(pq.values(), [])
 
