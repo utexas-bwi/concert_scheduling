@@ -48,27 +48,7 @@ import re
 import unique_id
 
 ## ROS messages
-from scheduler_msgs.msg import Resource
-try:
-    from scheduler_msgs.msg import CurrentStatus
-except ImportError:
-    class CurrentStatus:
-        # provide a stub for the CurrentStatus message:
-        AVAILABLE, ALLOCATED, MISSING = range(3)
-
-        def __init__(self, uri='', rapps=[]):
-            self.uri = uri
-            self.rapps = rapps
-            self.status = CurrentStatus.AVAILABLE
-            self.owner = None
-            self.priority = 0
-try:
-    from scheduler_msgs.msg import KnownResources
-except ImportError:
-    class KnownResources:
-        # provide a stub for the KnownResources message:
-        def __init__(self, resources=[]):
-            self.resources = resources
+from scheduler_msgs.msg import CurrentStatus, KnownResources, Resource
 
 
 ## Exceptions
@@ -276,7 +256,7 @@ class PoolResource(object):
                                         + str(request_id) + ': ' + self.uri)
         self.owner = None
         self.priority = 0               # no longer applicable
-        if self.status == CurrentStatus.ALLOCATED:  # not gone missing?
+        if self.status == CurrentStatus.ALLOCATED:  # not MISSING or GONE?
             self.status = CurrentStatus.AVAILABLE
 
 
@@ -505,22 +485,23 @@ class ResourcePool(object):
 
         Only appropriate when this *request* is being closed.
         """
-        rq_id = request.uuid
-        for res in request.allocations:
-            self.pool[res.uri].release(rq_id)
-            self.changed = True
+        self.release_resources(request.allocations, request.uuid)
 
-    def release_resources(self, resources):
+    def release_resources(self, resources, request_id=None):
         """ Release a list of *resources*.
 
         :param resources: List of ``scheduler_msgs/Resource`` messages.
+        :param request_id: Optional owning request.
+        :type request_id: :class:`uuid.UUID` or ``None``
 
         This makes newly allocated *resources* available again when
         they cannot be assigned to a request for some reason.
         """
         for res in resources:
             pool_res = self.pool[res.uri]
-            pool_res.release()
+            pool_res.release(request_id)
+            if pool_res.status == CurrentStatus.GONE:
+                del self.pool[res.uri]  # forget about it
             self.changed = True
 
     def update(self, client_list):
@@ -536,8 +517,12 @@ class ResourcePool(object):
                 self.pool[uri] = self.pool_resource(client)
                 self.changed = True
 
-        # previously-known resources not in clients_found are missing
+        # Previously-known resources not in clients_found are GONE,
+        # having voluntarily left the Concert.
         missing_clients = set(self.pool.keys()) - clients_found
         for uri in missing_clients:
-            self.pool[uri].status = CurrentStatus.MISSING
+            res = self.pool[uri]
+            res.status = CurrentStatus.GONE
+            if res.owner is None:       # not currently owned?
+                del self.pool[uri]      # forget about it
             self.changed = True

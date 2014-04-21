@@ -91,7 +91,7 @@ class TestResourcePool(unittest.TestCase):
     # resource pool tests
     ####################
 
-    @unittest.skip('allocate() is succeeding, and it should not')
+    @unittest.skip('allocate() is unexpectedly succeeding')
     def test_allocate_four_resources_failure(self):
         """ Similar to test_allocate_permutation_two_resources(), but
         here there are more permutations, so the allocator gives up
@@ -301,19 +301,6 @@ class TestResourcePool(unittest.TestCase):
         else:
             self.fail('allocation failed to yield any expected result')
 
-    def test_one_missing_update(self):
-        pool = ResourcePool(SINGLETON_POOL)
-        self.assertEqual(len(pool), 1)
-        self.assertIn(ROBERTO_NAME, pool)
-        self.assertTrue(pool.changed)
-        self.assertEqual(pool.known_resources(), SINGLETON_POOL)
-        self.assertFalse(pool.changed)
-        pool.update([])
-        self.assertEqual(len(pool), 1)
-        self.assertIn(ROBERTO_NAME, pool)
-        self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.MISSING)
-        self.assertTrue(pool.changed)
-
     def test_one_resource_constructor(self):
         pool = ResourcePool(SINGLETON_POOL)
         self.assertEqual(len(pool), 1)
@@ -326,7 +313,69 @@ class TestResourcePool(unittest.TestCase):
         self.assertEqual(pool.known_resources(), SINGLETON_POOL)
         self.assertFalse(pool.changed)
 
-    def test_one_update(self):
+    def test_one_update_gone(self):
+        pool = ResourcePool(SINGLETON_POOL)
+        self.assertEqual(len(pool), 1)
+        self.assertIn(ROBERTO_NAME, pool)
+        self.assertTrue(pool.changed)
+        self.assertEqual(pool.known_resources(), SINGLETON_POOL)
+        self.assertFalse(pool.changed)
+        pool.update([])
+        self.assertEqual(len(pool), 0)
+        self.assertNotIn(ROBERTO_NAME, pool)
+        self.assertTrue(pool.changed)
+
+    def test_one_update_gone_owned(self):
+        pool = ResourcePool(SINGLETON_POOL)
+        self.assertEqual(len(pool), 1)
+        self.assertIn(ROBERTO_NAME, pool)
+        self.assertTrue(pool.changed)
+        self.assertEqual(pool.known_resources(), SINGLETON_POOL)
+        self.assertFalse(pool.changed)
+
+        # allocate ROBERTO to this request:
+        rq = copy.deepcopy(ROBERTO_REQUEST)
+        alloc = pool.allocate(rq)
+        self.assertTrue(alloc)
+        rq.grant(alloc)
+        self.assertTrue(pool.changed)
+        pool.changed = False
+
+        # now, ROBERTO has left the concert:
+        pool.update([])
+        self.assertEqual(len(pool), 1)
+        self.assertIn(ROBERTO_NAME, pool)
+        self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.GONE)
+        self.assertTrue(pool.changed)
+        pool.changed = False
+
+        # release the request:
+        pool.release_request(rq)
+        self.assertEqual(len(pool), 0)
+        self.assertNotIn(ROBERTO_NAME, pool)
+        self.assertTrue(pool.changed)
+
+    @unittest.skip('not implemented yet')
+    def test_one_update_missing(self):
+        pool = ResourcePool(SINGLETON_POOL)
+        self.assertEqual(len(pool), 1)
+        self.assertIn(ROBERTO_NAME, pool)
+        self.assertTrue(pool.changed)
+        self.assertEqual(pool.known_resources(), SINGLETON_POOL)
+        self.assertFalse(pool.changed)
+        pool.update([
+                ConcertClient(
+                    name='roberto',
+                    platform_info=PlatformInfo(uri=ROBERTO_NAME),
+                    client_status = 'unavailable',
+                    apps=[App(name=TELEOP_RAPP),
+                          App(name=EXAMPLE_RAPP)])])
+        self.assertEqual(len(pool), 1)
+        self.assertIn(ROBERTO_NAME, pool)
+        self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.MISSING)
+        self.assertTrue(pool.changed)
+
+    def test_one_update_new(self):
         pool = ResourcePool()
         self.assertEqual(len(pool), 0)
         self.assertTrue(pool.changed)
