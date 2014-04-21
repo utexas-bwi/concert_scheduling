@@ -63,6 +63,10 @@ from . import TransitionError
 STARTING_STATES = frozenset([Request.NEW, Request.RESERVED])
 TERMINAL_STATES = frozenset([Request.CLOSED])
 
+# Printable name for each state, indexed by number.
+STATE_NAME = ['NEW', 'RESERVED', 'WAITING', 'GRANTED',
+              'PREEMPTING', 'CANCELING', 'CLOSED']
+
 ## State transition merge table.
 #
 #  An immutable set of (old, new) status pairs.  All pairs in the
@@ -221,7 +225,7 @@ class RequestBase(object):
         new_status = event.trans.get(self.msg.status)
         if new_status is None:
             raise TransitionError('invalid event ' + event.name
-                                  + ' in state ' + str(self.msg.status))
+                                  + ' in state ' + STATE_NAME[self.msg.status])
         self.msg.status = new_status
         if reason is not None:
             self.msg.reason = reason

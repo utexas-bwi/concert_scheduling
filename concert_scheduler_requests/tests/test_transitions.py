@@ -164,6 +164,17 @@ class TestTransitions(unittest.TestCase):
         self.assert_valid(ActiveRequest, Request.WAITING,
                           'preempt', Request.WAITING)
 
+    def test_state_names(self):
+        # test that STATE_NAME list matches the actual values
+        self.assertEqual(len(STATE_NAME), 7)
+        self.assertEqual(STATE_NAME[Request.NEW], 'NEW')
+        self.assertEqual(STATE_NAME[Request.RESERVED], 'RESERVED')
+        self.assertEqual(STATE_NAME[Request.WAITING], 'WAITING')
+        self.assertEqual(STATE_NAME[Request.GRANTED], 'GRANTED')
+        self.assertEqual(STATE_NAME[Request.PREEMPTING], 'PREEMPTING')
+        self.assertEqual(STATE_NAME[Request.CANCELING], 'CANCELING')
+        self.assertEqual(STATE_NAME[Request.CLOSED], 'CLOSED')
+
     def test_validate(self):
         rq1 = ResourceRequest(Request(id=unique_id.toMsg(TEST_UUID),
                                       resources=[TEST_RESOURCE],
