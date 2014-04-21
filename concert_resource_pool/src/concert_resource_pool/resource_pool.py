@@ -52,6 +52,7 @@ from scheduler_msgs.msg import CurrentStatus, KnownResources, Resource
 from concert_msgs.msg import Constants
 STATUS_CONNECTED = Constants.CONCERT_CLIENT_STATUS_CONNECTED
 
+
 ## Exceptions
 class InvalidRequestError(Exception):
     """ Request cannot be satisfied as specified. """
