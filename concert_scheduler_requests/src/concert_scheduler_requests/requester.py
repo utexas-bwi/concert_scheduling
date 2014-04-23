@@ -84,6 +84,10 @@ class Requester:
                       testing.
     :type frequency: float
 
+    :param lock: The big requester serialization lock, allocated
+        internally, if ``None``.
+    :type lock: :class:`.threading.RLock()`
+
     As long as the :class:`.Requester` object remains, it will
     periodically send request messages to the scheduler, even when no
     requests are outstanding.  The scheduler will provide feedback for
