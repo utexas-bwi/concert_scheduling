@@ -57,6 +57,8 @@ Publishes:
 from __future__ import absolute_import, print_function, unicode_literals
 
 import rospy
+import threading
+
 from concert_msgs.msg import ConcertClients
 from scheduler_msgs.msg import KnownResources
 
@@ -101,18 +103,22 @@ class SchedulerResource(PoolResource):
 class SchedulerClients(ResourcePool):
     """ Scheduler clients interface.
 
-    :param lock: The big scheduler serialization lock.
+    :param lock: The big scheduler serialization lock, allocated
+        internally, if ``None``.
+    :type lock: :class:`.threading.RLock()`
     :param resource_pool: resource pool class to use, must provide a
         compatible :class:`.ResourcePool` interface.
 
     Provides all attributes defined for the base *resource_pool*
     class, plus these:
     """
-    def __init__(self, lock,
+    def __init__(self, lock=None,
                  resource_pool=ResourcePool,
                  pool_resource=SchedulerResource):
         """ Constructor. """
         super(SchedulerClients, self).__init__(pool_resource=pool_resource)
+        if lock is None:
+            lock = threading.RLock()
         self.lock = lock
         """ Big scheduler lock for serializing updates. """
         self._pub = rospy.Publisher('resource_pool', KnownResources,

@@ -46,11 +46,12 @@ ROCON services.
 from __future__ import absolute_import, print_function, unicode_literals
 
 import rospy
+import threading
+
 from concert_scheduler_requests import Scheduler, TransitionError
 from concert_scheduler_requests.priority_queue import (
     PriorityQueue, QueueElement)
 from scheduler_msgs.msg import CurrentStatus, Request
-
 from concert_resource_pool import (
     FailedToStartRappError, InvalidRequestError,
     ResourcePool, SchedulerClients)
@@ -78,10 +79,12 @@ class SimpleSchedulerNode(object):
         self.notification_set = set()
         """ Set of requester identifiers to notify. """
         self.timer = rospy.Timer(self.period, self.reschedule)
-        self.sch = Scheduler(self.callback)
-        """ Scheduler request handler. """
-        self.pool = SchedulerClients(self.sch.lock)
+        self.lock = threading.RLock()
+        """ Big Scheduler Lock. """
+        self.pool = SchedulerClients(lock=self.lock)
         """ Resource pool of known ROCON clients. """
+        self.sch = Scheduler(self.callback, lock=self.lock)
+        """ Scheduler request handler. """
 
         # Handle messages until canceled.
         rospy.spin()
@@ -213,7 +216,7 @@ class SimpleSchedulerNode(object):
         Uses the Big Scheduler Lock to serialize changes with
         operations done within the scheduler callback thread.
         """
-        with self.sch.lock:
+        with self.lock:
 
             # Check ready queue for requests that cannot be resolved
             # using currently-available resources.

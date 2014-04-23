@@ -113,9 +113,11 @@ class Requester:
     """
 
     def __init__(self, feedback, uuid=None, priority=0, topic=None,
-                 frequency=common.HEARTBEAT_HZ):
+                 frequency=common.HEARTBEAT_HZ, lock=None):
         """ Constructor. """
-        self.lock = threading.RLock()
+        if lock is None:
+            lock = threading.RLock()
+        self.lock = lock
         """
         .. _Big_Requester_Lock:
 

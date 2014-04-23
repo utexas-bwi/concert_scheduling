@@ -153,6 +153,9 @@ class Scheduler:
         ``None``, search for a ROS ``topic_name`` parameter, or else
         assume ``rocon_scheduler``.
     :type topic: str or ``None``
+    :param lock: The big scheduler serialization lock, allocated
+        internally, if ``None``.
+    :type lock: :class:`.threading.RLock()`
 
     .. describe:: callback(rset)
 
@@ -173,12 +176,14 @@ class Scheduler:
 
     """
 
-    def __init__(self, callback,
-                 frequency=common.HEARTBEAT_HZ, topic=None):
+    def __init__(self, callback, frequency=common.HEARTBEAT_HZ,
+                 topic=None, lock=None):
         """ Constructor. """
         self.callback = callback
         """ Callback function for request updates. """
-        self.lock = threading.RLock()
+        if lock is None:
+            lock = threading.RLock()
+        self.lock = lock
         """
         .. _Big_Scheduler_Lock:
 
