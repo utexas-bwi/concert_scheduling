@@ -74,7 +74,10 @@ class _RequesterStatus:
 
     def __init__(self, sched, msg):
         """ Constructor. """
-        self.last_msg_time = msg.header.stamp
+        self.last_msg_time = rospy.Time.now()
+        """ Local time of last message.  Avoid using message header
+        time stamps because other Concert components may not be using
+        synchronized clocks."""
         self.sched = sched
         """ Scheduler serving this requester. """
         self.requester_id = unique_id.fromMsg(msg.requester)
@@ -106,7 +109,7 @@ class _RequesterStatus:
         :type msg: scheduler_msgs/SchedulerRequests
 
         """
-        self.last_msg_time = msg.header.stamp
+        self.last_msg_time = rospy.Time.now()
         # Make a new RequestSet from this message
         new_rset = RequestSet(msg, contents=ActiveRequest)
         if self.rset != new_rset:       # something new?
