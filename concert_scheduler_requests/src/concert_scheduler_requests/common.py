@@ -56,9 +56,10 @@ def feedback_topic(uuid, scheduler_topic=SCHEDULER_TOPIC):
     :param uuid: UUID_ of the requester.
     :type uuid: :class:`uuid.UUID`
 
-    :param topic: Topic name for the corresponding scheduler. If
-                  missing, the usual scheduler topic name is assumed.
-    :type topic: str
+    :param scheduler_topic: Topic name for the corresponding
+                  scheduler. If missing, the usual scheduler topic
+                  name is assumed.
+    :type scheduler_topic: str
     :returns: Topic name string for replying to this requester.
 
     """

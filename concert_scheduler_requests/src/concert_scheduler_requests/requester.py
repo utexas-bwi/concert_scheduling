@@ -74,8 +74,10 @@ class Requester:
 
     :param priority: default priority for requests from this requester.
 
-    :param topic: Topic name for allocating resources.
-    :type topic: str
+    :param topic: Base name of of resource allocation request topic.
+        If ``None``, search for a ROS ``topic_name`` parameter, or
+        else assume ``rocon_scheduler``.
+    :type topic: str or ``None``
 
     :param frequency: requester heartbeat frequency in Hz.  Use the
                       default, except in exceptional situations or for
@@ -110,9 +112,7 @@ class Requester:
 
     """
 
-    def __init__(self, feedback, uuid=None,
-                 priority=0,
-                 topic=common.SCHEDULER_TOPIC,
+    def __init__(self, feedback, uuid=None, priority=0, topic=None,
                  frequency=common.HEARTBEAT_HZ):
         """ Constructor. """
         self.lock = threading.RLock()
@@ -144,6 +144,12 @@ class Requester:
         """ Default for new requests' priorities if none specified. """
 
         self.feedback = feedback        # requester feedback
+        if topic is None:
+            topic_param = rospy.search_param('topic_name')
+            if topic_param is None:
+                topic = common.SCHEDULER_TOPIC
+            else:
+                topic = rospy.get_param(topic_param)
         self.pub_topic = topic
         self.sub_topic = common.feedback_topic(uuid, topic)
         rospy.loginfo('ROCON requester feedback topic: ' + self.sub_topic)

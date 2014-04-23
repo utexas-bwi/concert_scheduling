@@ -78,12 +78,8 @@ class SimpleSchedulerNode(object):
         self.notification_set = set()
         """ Set of requester identifiers to notify. """
         self.timer = rospy.Timer(self.period, self.reschedule)
-
-        try:
-            topic_name = rospy.get_param('~topic_name')
-            self.sch = Scheduler(self.callback, topic=topic_name)
-        except KeyError:
-            self.sch = Scheduler(self.callback)  # use the default
+        self.sch = Scheduler(self.callback)
+        """ Scheduler request handler. """
         self.pool = SchedulerClients(self.sch.lock)
         """ Resource pool of known ROCON clients. """
 

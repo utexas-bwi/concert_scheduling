@@ -149,8 +149,10 @@ class Scheduler:
 
     :param frequency: requester heartbeat frequency in Hz.
     :type frequency: float
-    :param topic: Topic name for resource allocation requests.
-    :type topic: str
+    :param topic: Topic name for resource allocation requests.  If
+        ``None``, search for a ROS ``topic_name`` parameter, or else
+        assume ``rocon_scheduler``.
+    :type topic: str or ``None``
 
     .. describe:: callback(rset)
 
@@ -172,8 +174,7 @@ class Scheduler:
     """
 
     def __init__(self, callback,
-                 frequency=common.HEARTBEAT_HZ,
-                 topic=common.SCHEDULER_TOPIC):
+                 frequency=common.HEARTBEAT_HZ, topic=None):
         """ Constructor. """
         self.callback = callback
         """ Callback function for request updates. """
@@ -193,6 +194,12 @@ class Scheduler:
         """
         self.requesters = {}
         """ Dictionary of active requesters and their requests. """
+        if topic is None:
+            topic_param = rospy.search_param('topic_name')
+            if topic_param is None:
+                topic = common.SCHEDULER_TOPIC
+            else:
+                topic = rospy.get_param(topic_param)
         self.topic = topic
         """ Scheduler request topic name. """
         rospy.loginfo('scheduler request topic: ' + self.topic)
