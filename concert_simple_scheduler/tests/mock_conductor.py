@@ -74,7 +74,8 @@ class MockConductor(object):
         self.pub = rospy.Publisher('concert_client_changes',
                                    ConcertClients, queue_size=1, latch=True)
         self.gateways = {}              # dictionary of gateways
-        rospy.sleep(1.0)                # let publisher initialize
+        delay = rospy.get_param('~delay', 1.0)
+        rospy.sleep(delay)              # wait for test to commence
         try:
             self.send_resources()
         except (ValueError, IOError, rospkg.common.ResourceNotFound) as e:

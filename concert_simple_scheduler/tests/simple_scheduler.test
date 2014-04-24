@@ -15,6 +15,7 @@
     <param
         name="resources_url"
         value="package://concert_simple_scheduler/tests/params/clients2.yaml"/>
+    <param name="delay" value="10.0" />
   </node>
 
   <!-- start requester unit test node -->
