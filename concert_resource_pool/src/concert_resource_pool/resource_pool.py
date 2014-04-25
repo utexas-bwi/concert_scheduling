@@ -44,7 +44,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import copy
 from itertools import chain, islice, permutations
-import re
+import rocon_uri
 import unique_id
 
 ## ROS messages
@@ -67,36 +67,6 @@ class ResourceNotAvailableError(Exception):
 class ResourceNotOwnedError(Exception):
     """ Error exception: resource not owned. """
     pass
-
-
-def rocon_name(uri):
-    """ Generate canonical ROCON resource name.
-
-    :param uri: ROCON Uniform Resource Identifier from a
-        :class:`.PoolResource`, ``scheduler_msgs/Resource`` message,
-        or other resource representation.
-
-    :returns: (str) Canonical ROCON name for this resource.
-
-    A fully-resolved canonical name uniquely describes each resource
-    within a ROCON_ Concert.  Some requests may match multiple
-    resources by embedding pattern matching syntax in the name.
-
-    If the *uri* is not already a ROCON name starting with 'rocon:',
-    assume it may use the dotted syntax and convert shell wildcard
-    asterisks to the equivalent Python regular expression.
-
-    """
-    if uri[0:6] == 'rocon:':
-        return uri            # already canonical
-
-    # Assume dotted representation, convert that to canonical format.
-    retval = 'rocon:'
-    for part in uri.split('.'):
-        if part == '*':                 # shell wildcard syntax?
-            part = '.*'                 # convert to Python RE
-        retval += '/' + part
-    return retval
 
 
 class PoolResource(object):
@@ -130,10 +100,10 @@ class PoolResource(object):
     def __init__(self, msg):
         """ Constructor. """
         try:
-            self.uri = rocon_name(msg.platform_info.uri)
+            self.uri = msg.platform_info.uri
             """ Fully-resolved canonical ROCON resource name. """
         except AttributeError:          # not a ConcertClient message?
-            self.uri = rocon_name(msg.uri)
+            self.uri = msg.uri
         try:
             self.rapps = set()
             for rapp in msg.apps:
@@ -223,7 +193,7 @@ class PoolResource(object):
         an equivalent Python regular expression.
 
         """
-        return self.match_pattern(rocon_name(res.uri), res.rapp)
+        return self.match_pattern(res.uri, res.rapp)
 
     def match_pattern(self, pattern, rapp):
         """ Match this resource to a ROCON name and application.
@@ -234,15 +204,15 @@ class PoolResource(object):
         :param rapp: ROCON application name.
         :type rapp: str
         :returns: ``True`` if this specific resource matches.
+        :raises: :class:`.RoconURIValueError` if *pattern* invalid.
 
         The *rapp* must be one of those advertised by this ROCON
-        resource.  The *pattern* may include Python regular expression
-        syntax for matching multiple resource names.
-
+        resource.  The *pattern* may be a ROCON pattern matching
+        multiple resource names.
         """
         if rapp not in self.rapps:      # rapp not advertised here?
             return False
-        return re.match(pattern, self.uri)
+        return rocon_uri.is_compatible(self.uri, pattern)
 
     def release(self, request_id=None):
         """ Release this resource.

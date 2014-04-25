@@ -41,8 +41,7 @@ TEST_RESOURCE_STRING = (
   rapps:
     """ + EXAMPLE_RAPP)
 
-# this Resource has an old-format platform_info string:
-TEST_ANOTHER = Resource(uri='segbot.marvin', rapp=EXAMPLE_RAPP)
+TEST_ANOTHER = Resource(uri='rocon:/segbot/marvin', rapp=EXAMPLE_RAPP)
 TEST_ANOTHER_NAME = 'rocon:/segbot/marvin'
 TEST_ANOTHER_STRING = (
     """rocon:/segbot/marvin, status: 0
@@ -513,13 +512,15 @@ class TestPoolResource(unittest.TestCase):
         res1 = PoolResource(TEST_STATUS)
         self.assertTrue(res1.match(Resource(
                     rapp=EXAMPLE_RAPP, uri=r'rocon:/segbot')))
-        self.assertTrue(res1.match(Resource(rapp=EXAMPLE_RAPP, uri='segbot')))
+        #self.assertTrue(res1.match(Resource(rapp=EXAMPLE_RAPP, uri='')))
+        self.assertTrue(res1.match(Resource(
+                    rapp=EXAMPLE_RAPP, uri='rocon:')))
         self.assertTrue(res1.match(Resource(
                     rapp=EXAMPLE_RAPP, uri='rocon:/segbot/roberto')))
         self.assertFalse(res1.match(Resource(
-            rapp=EXAMPLE_RAPP, uri='linux.precise.ros.segbot.marvin')))
+            rapp=EXAMPLE_RAPP, uri='rocon:segbot/marvin')))
         self.assertTrue(res1.match(Resource(
-            rapp=EXAMPLE_RAPP, uri=r'rocon:/(segbot|turtlebot)/')))
+            rapp=EXAMPLE_RAPP, uri=r'rocon:/segbot|turtlebot/')))
 
         # different rapps:
         diff_rapp = Resource(rapp='different/rapp', uri=r'rocon:/segbot')
@@ -534,7 +535,7 @@ class TestPoolResource(unittest.TestCase):
         self.assertTrue(res1.match_pattern('rocon:/segbot', EXAMPLE_RAPP))
         self.assertFalse(res1.match_pattern('rocon:/*/marvin', EXAMPLE_RAPP))
         self.assertTrue(res1.match_pattern(
-            'rocon:/(segbot|turtlebot)/', EXAMPLE_RAPP))
+            'rocon:/segbot|turtlebot/', EXAMPLE_RAPP))
 
         # different rapps:
         self.assertFalse(res1.match_pattern('rocon:/segbot', 'different/rapp'))
@@ -576,11 +577,6 @@ class TestPoolResource(unittest.TestCase):
         res4.status = CurrentStatus.MISSING    # resource now missing
         res4.release()
         self.assertEqual(res4.status, CurrentStatus.MISSING)
-
-    def test_rocon_name(self):
-        self.assertEqual(rocon_name(TEST_RESOURCE_NAME), TEST_RESOURCE_NAME)
-        self.assertEqual(rocon_name(TEST_ANOTHER_NAME), TEST_ANOTHER_NAME)
-        self.assertNotEqual(rocon_name(TEST_ANOTHER_NAME), TEST_RESOURCE_NAME)
 
 if __name__ == '__main__':
     import rosunit
