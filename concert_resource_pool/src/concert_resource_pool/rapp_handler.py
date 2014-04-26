@@ -88,11 +88,16 @@ class RappHandler(object):
         :raises: :exc:`.FailedToStartRappError`
         """
         try:
-            self.start_rapp(StartRappRequest(name=rapp, remappings=remappings))
+            resp = self.start_rapp(StartRappRequest(name=rapp,
+                                                    remappings=remappings))
         except (rospy.service.ServiceException,
                 rospy.exceptions.ROSInterruptException) as e:
             # Service not found or ros is shutting down
-            raise FailedToStartRappError("%s" % str(e))
+            raise FailedToStartRappError(str(e))
+        else:
+            if not resp.started:
+                # start_rapp request failed
+                raise FailedToStartRappError(resp.message)
 
     def stop(self):
         """
@@ -101,8 +106,11 @@ class RappHandler(object):
         running - it will just stop the currently running rapp.
         """
         try:
-            self.stop_rapp(StopRappRequest())
+            resp = self.stop_rapp(StopRappRequest())
         except (rospy.service.ServiceException,
                 rospy.exceptions.ROSInterruptException) as e:
             # Service not found or ros is shutting down
-            raise FailedToStopRappError("%s" % str(e))
+            raise FailedToStopRappError(str(e))
+        else:
+            if not resp.stopped:
+                raise FailedToStopRappError(resp.message)
