@@ -49,8 +49,7 @@ import unique_id
 
 ## ROS messages
 from scheduler_msgs.msg import CurrentStatus, KnownResources, Resource
-from concert_msgs.msg import Constants
-STATUS_CONNECTED = Constants.CONCERT_CLIENT_STATUS_CONNECTED
+from concert_msgs.msg import ConcertClientState
 
 
 ## Exceptions
@@ -106,7 +105,7 @@ class PoolResource(object):
             self.uri = msg.uri
         try:
             self.rapps = set()
-            for rapp in msg.apps:
+            for rapp in msg.rapps:
                 self.rapps.add(rapp.name)
             """ The :class:`set` of ROCON application name strings
             this platform advertises. """
@@ -489,7 +488,7 @@ class ResourcePool(object):
                 self.pool[uri] = self.pool_resource(client)
                 self.changed = True
             pool_res = self.pool[uri]
-            if client.client_status != STATUS_CONNECTED:
+            if client.state != ConcertClientState.AVAILABLE:
                 pool_res.status = CurrentStatus.MISSING
                 self.changed = True
             elif pool_res.status == CurrentStatus.MISSING:

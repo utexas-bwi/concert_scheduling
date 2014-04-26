@@ -11,7 +11,7 @@
 .. module:: rapp_handler
 
 This module provides a class to other nodes (not the conductor itself)
-that can be used to start/stop apps on each concert client. This class
+that can be used to start/stop rapps on each concert client. This class
 is initialised by data coming from the conductor's concert client
 publishers.
 
@@ -23,7 +23,7 @@ publishers.
 
 import rospy
 from rocon_app_manager_msgs.srv import (
-    StartApp, StartAppRequest, StopApp, StopAppRequest)
+    StartRapp, StartRappRequest, StopRapp, StopRappRequest)
 
 
 ##############################################################################
@@ -56,8 +56,8 @@ class RappHandler(object):
         'gateway_name',   # unique gateway name
         'uri',            # rocon uri for this concert client
         'rapps',          # list of rapp names that can be started
-        'start_rapp',     # service proxy to this client's start_app service
-        'stop_rapp'       # service proxy to this client's stop_app service
+        'start_rapp',     # service proxy to this client's start_rapp service
+        'stop_rapp'       # service proxy to this client's stop_rapp service
     ]
 
     def __init__(self, msg):
@@ -71,23 +71,24 @@ class RappHandler(object):
         self.name = msg.name
         self.gateway_name = msg.gateway_name
         self.uri = msg.platform_info.uri
-        self.rapps = [rapp.name for rapp in msg.apps]
+        self.rapps = [rapp.name for rapp in msg.rapps]
         self.start_rapp = rospy.ServiceProxy(
-            '/' + self.gateway_name + '/start_app', StartApp)
+            '/' + self.gateway_name + '/start_rapp', StartRapp)
         self.stop_rapp = rospy.ServiceProxy(
-            '/' + self.gateway_name + '/stop_app', StopApp)
+            '/' + self.gateway_name + '/stop_rapp', StopRapp)
 
     def start(self, rapp, remappings):
         """
         Start the rapp with the specified remappings.
 
         :param rapp str: name of the rapp to start (e.g. rocon_apps/teleop)
-        :param remappings rocon_std_msgs/Remapping[]: remappings to apply to the rapp when starting.
+        :param remappings rocon_std_msgs/Remapping[]: remappings to apply to
+            the rapp when starting.
 
         :raises: :exc:`.FailedToStartRappError`
         """
         try:
-            self.start_rapp(StartAppRequest(name=rapp, remappings=remappings))
+            self.start_rapp(StartRappRequest(name=rapp, remappings=remappings))
         except (rospy.service.ServiceException,
                 rospy.exceptions.ROSInterruptException) as e:
             # Service not found or ros is shutting down
@@ -100,7 +101,7 @@ class RappHandler(object):
         running - it will just stop the currently running rapp.
         """
         try:
-            self.stop_rapp(StopAppRequest())
+            self.stop_rapp(StopRappRequest())
         except (rospy.service.ServiceException,
                 rospy.exceptions.ROSInterruptException) as e:
             # Service not found or ros is shutting down

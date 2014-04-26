@@ -154,4 +154,4 @@ class SchedulerClients(ResourcePool):
         operations done within the scheduler callback thread.
         """
         with self.lock:
-            self.update(msg.clients)
+            self.update(msg.clients + msg.missing_clients)

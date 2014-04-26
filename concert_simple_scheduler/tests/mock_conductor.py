@@ -7,9 +7,9 @@ from __future__ import absolute_import, print_function, unicode_literals
 import rospy
 import rospkg
 import yaml
-from rocon_app_manager_msgs.msg import App
+from rocon_app_manager_msgs.msg import Rapp
 from rocon_app_manager_msgs.srv import (
-    StartApp, StartAppResponse, StopApp, StopAppResponse)
+    StartRapp, StartRappResponse, StopRapp, StopRappResponse)
 from rocon_std_msgs.msg import PlatformInfo
 from concert_msgs.msg import ConcertClient, ConcertClients
 try:
@@ -36,18 +36,18 @@ class MockGateway(object):
         self.client = concert_client
         self.rapps = set()
         """ Set of rapps supported at this gateway. """
-        for rapp in self.client.apps:
+        for rapp in self.client.rapps:
             self.rapps.add(rapp.name)
         namespace = '/' + self.client.gateway_name
-        self.start_service = rospy.Service(namespace + '/start_app',
-                                           StartApp, self.start)
-        self.stop_service = rospy.Service(namespace + '/stop_app',
-                                          StopApp, self.stop)
+        self.start_service = rospy.Service(namespace + '/start_rapp',
+                                           StartRapp, self.start)
+        self.stop_service = rospy.Service(namespace + '/stop_rapp',
+                                          StopRapp, self.stop)
 
     def start(self, req):
-        """ StartApp service handler. """
-        resp = StartAppResponse(started=True,
-                                app_namespace=self.client.gateway_name)
+        """ Mock StartRapp service handler. """
+        resp = StartRappResponse(
+            started=True, application_namespace=self.client.gateway_name)
         if self.started == True:
             resp.message = 'Rapp already started: ' + self.client.gateway_name
             rospy.logerr(resp.message)
@@ -61,9 +61,9 @@ class MockGateway(object):
         return resp
 
     def stop(self, req):
-        """ StopApp service handler. """
+        """ Mock StopRapp service handler. """
         self.started = False
-        return StopAppResponse(stopped=True)
+        return StopRappResponse(stopped=True)
 
 
 class MockConductor(object):
@@ -102,7 +102,7 @@ class MockConductor(object):
                  name=res['name'],
                  platform_info = PlatformInfo(uri=res['uri']))
              for rapp in res['rapps']:
-                 ccl.apps.append(App(name=rapp))
+                 ccl.rapps.append(Rapp(name=rapp))
 
              gw = res.get('gateway_name')
              if gw is None:

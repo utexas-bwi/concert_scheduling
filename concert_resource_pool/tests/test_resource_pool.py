@@ -10,9 +10,9 @@ import unittest
 
 # ROS dependencies
 import unique_id
-from rocon_app_manager_msgs.msg import App
+from rocon_app_manager_msgs.msg import Rapp
 from rocon_std_msgs.msg import PlatformInfo
-from concert_msgs.msg import ConcertClient
+from concert_msgs.msg import ConcertClient, ConcertClientState
 from scheduler_msgs.msg import Request, Resource
 from scheduler_msgs.msg import CurrentStatus, KnownResources
 from concert_scheduler_requests.transitions import ActiveRequest
@@ -365,9 +365,9 @@ class TestResourcePool(unittest.TestCase):
                 ConcertClient(
                     name='roberto',
                     platform_info=PlatformInfo(uri=ROBERTO_NAME),
-                    client_status = 'unavailable',
-                    apps=[App(name=TELEOP_RAPP),
-                          App(name=EXAMPLE_RAPP)])])
+                    state = ConcertClientState.MISSING,
+                    rapps=[Rapp(name=TELEOP_RAPP),
+                           Rapp(name=EXAMPLE_RAPP)])])
         self.assertEqual(len(pool), 1)
         self.assertIn(ROBERTO_NAME, pool)
         self.assertEqual(pool[ROBERTO_NAME].status, CurrentStatus.MISSING)
@@ -383,9 +383,9 @@ class TestResourcePool(unittest.TestCase):
                 ConcertClient(
                     name='roberto',
                     platform_info=PlatformInfo(uri=ROBERTO_NAME),
-                    client_status = 'connected',
-                    apps=[App(name=TELEOP_RAPP),
-                          App(name=EXAMPLE_RAPP)])])
+                    state = ConcertClientState.AVAILABLE,
+                    rapps=[Rapp(name=TELEOP_RAPP),
+                           Rapp(name=EXAMPLE_RAPP)])])
         self.assertEqual(len(pool), 1)
         self.assertIn(ROBERTO_NAME, pool)
         self.assertTrue(pool.changed)
