@@ -2,20 +2,19 @@ Overview
 ========
 
 Because different systems require different scheduling policies, the
-ROCON design allows for multiple scheduler implementations.  The
-scheduler runs as a ROS node on same master as the ROCON Conductor,
-services and other Solution components.
+`Robotics in Concert`_ (ROCON) framework allows multiple scheduler
+implementations.  The scheduler is a ROS node running on same master
+as the ROCON Conductor, services and other Solution components.
 
-The `concert_simple_scheduler`_ ROS_ package provides a Python
-implementation of a scheduler node for managing scheduler requests
-within the `Robotics in Concert`_ (ROCON) framework.  It uses some
-common infrastructure packages that other scheduler implementations
-can use or modify.
+This `concert_simple_scheduler`_ ROS_ package implements a scheduler
+node in Python.  It uses some infrastructure packages that other
+scheduler implementations can also use or modify.
 
-*This implementation is still experimental.*  
+ROS interface
+=============
 
-ROS simple_scheduler node
--------------------------
+simple_scheduler node
+---------------------
 
 This node provides a relatively simple fixed-priority scheduler which
 allocates resources within each priority on a first-come, first-served
@@ -53,8 +52,13 @@ Parameters
     topics. Since the feedback topic is generated dynamically, it
     would otherwise be difficult to remap.
 
+Usage
+'''''
+
+    $ rosrun concert_simple_scheduler simple_scheduler
+
 Protocol
-''''''''
+========
 
 Each `scheduler_msgs/SchedulerRequests`_ message describes all
 resources currently desired by that requester.  The status of each
@@ -62,16 +66,11 @@ resource request is passed back and forth between the requester and
 the scheduler via `scheduler_msgs/Request`_ elements contained in the
 allocation and feedback topics.
 
-Handling these messages and managing the states of each resource
-request can be quite tricky, because state changes flow over the two
-topics simultaneously.  Both schedulers and requesters should use the
+Handling these messages and managing the resource request states can
+be tricky, because state changes flow over the two topics
+simultaneously.  Both schedulers and requesters should use the
 `concert_scheduler_requests`_ package to perform the appropriate state
-transitions for every request.
-
-Usage
-'''''
-
-    $ rosrun concert_simple_scheduler simple_scheduler
+transitions for each request.
 
 .. _`concert_msgs/ConcertClients`:
    https://github.com/robotics-in-concert/rocon_msgs/blob/hydro-devel/concert_msgs/msg/ConcertClients.msg

@@ -1,8 +1,8 @@
 Concert Simple Scheduler
 ========================
 
-This ROS_ package schedules resource requests within the `Robotics in
-Concert`_ framework.
+This ROS_ package assigns resources within the `Robotics in Concert`_
+framework.
 
 .. include:: weblinks.rst
 
@@ -12,9 +12,9 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   README
-   scheduler_node
-   CHANGELOG
+   ../README
+   internals
+   ../CHANGELOG
 
 Indices and tables
 ==================

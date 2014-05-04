@@ -33,11 +33,9 @@
 """
 .. module:: scheduler_node
 
-Simple scheduler node.
-
-This module implements the scheduler interface for the `Robotics in
-Concert`_ (ROCON) project.  It tracks resources and allocates them to
-ROCON services.
+This Python module implements the scheduler interface for the
+`Robotics in Concert`_ (ROCON) project.  It tracks resources and
+allocates them to ROCON services.
 
 .. include:: weblinks.rst
 
@@ -58,13 +56,10 @@ from concert_resource_pool import (
 
 
 class SimpleSchedulerNode(object):
-    """ Simple scheduler node.
+    """ Simple ROCON scheduler node.
 
     :param node_name: (str) Default name of scheduler node.
     :param period: (:class:`rospy.Duration`) Rescheduling time quantum.
-
-    Derived versions of this class can implement different scheduling
-    policies.
     """
     def __init__(self, node_name='simple_scheduler',
                  period=rospy.Duration(1.0)):
@@ -208,12 +203,11 @@ class SimpleSchedulerNode(object):
         """ Periodic rescheduling thread.
 
         Moves requests that cannot be satisfied with
-        currently-available resources to the blocked queue.
+        currently-available resources to the blocked queue.  Also
+        checks the blocked queue for requests that can be satisfied
+        due to newly-arrived resources.
 
-        TODO: Also check the blocked queue for requests that can
-        be satisfied due to newly arrived resources (#16).
-
-        Uses the Big Scheduler Lock to serialize changes with
+        Uses the Big Scheduler Lock to serialize these changes with
         operations done within the scheduler callback thread.
         """
         with self.lock:
