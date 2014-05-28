@@ -89,7 +89,7 @@ class _RequesterStatus:
                                                self.sched.topic)
         rospy.loginfo('requester feedback topic: ' + feedback_topic)
         self.pub = rospy.Publisher(feedback_topic, SchedulerRequests,
-                                   latch=True, queue_size=5)
+                                   latch=True, queue_size=1)
 
     def contact(self):
         """ Contact newly-connected requester. """

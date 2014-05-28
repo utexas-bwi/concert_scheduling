@@ -163,7 +163,7 @@ class Requester:
                                     self._feedback,
                                     queue_size=1, tcp_nodelay=True)
         self.pub = rospy.Publisher(self.pub_topic, SchedulerRequests,
-                                   latch=True, queue_size=5)
+                                   latch=True, queue_size=1)
         self.time_delay = rospy.Duration(1.0 / frequency)
         self._set_timer()
 
