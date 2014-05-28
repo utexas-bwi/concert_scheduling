@@ -1,8 +1,8 @@
 Change history
 ==============
 
-0.7.0 (forthcoming)
--------------------
+0.7.0 (2014-05-28)
+------------------
 
  * Target version for Indigo Igloo release.
  * Rename `rocon_scheduler_requests`_ package to
